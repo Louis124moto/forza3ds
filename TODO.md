@@ -1,0 +1,189 @@
+# Forza3DS — TODO
+
+> Cahier des charges consolidé le 25 novembre 2026. Toutes les cases sont des tâches à réaliser, pas des fonctionnalités déjà présentes.
+
+## Objectif
+Jeu de conduite 3D natif pour New Nintendo 3DS, écrit en C avec devkitARM, libctru et Citro3D. Priorité à une démo de conduite très soignée avant le monde complet.
+
+## Contraintes
+- [ ] Cible : New Nintendo 3DS / New Nintendo 3DS XL (ARM11).
+- [ ] Exécutable natif 3DSX.
+- [ ] Objectif : 30 FPS stables, à mesurer sur console réelle.
+- [ ] Pas de 3D stéréoscopique dans la première version.
+- [ ] Tester sur vraie New 3DS à chaque étape significative.
+- [ ] Ne déclarer aucune fonctionnalité terminée sans code et vérification.
+- [ ] Gérer proprement les fichiers externes invalides et les erreurs mémoire.
+
+## Vision du jeu
+- [ ] Jeu solo de conduite et d'exploration libre, avec courses organisées et sans circulation routière.
+- [ ] Mélange d'exploration automobile, de conduite simulation et de courses.
+- [ ] Grande île fictive d'inspiration japonaise, montagneuse et découpée en plusieurs péninsules.
+- [ ] Biomes : montagnes, forêts, bambouseraies, campagnes, villages, villes, zones industrielles, côtes, plages, lacs et rivières.
+- [ ] Ambiance contemplative et colorée, soleil uniquement et cycle jour/nuit rapide.
+- [ ] Disciplines : route, drift, montagne, rallye/off-road et contre-la-montre.
+- [ ] Garage 3D, collection de voitures, personnalisations visuelles et mécaniques.
+- [ ] Véhicules abandonnés placés selon les biomes et les bâtiments, restaurés automatiquement à la découverte.
+- [ ] Argent gagné par les courses ; pas de niveaux de personnage.
+
+## Première démo jouable — priorité absolue
+- [ ] Initialiser l'application native et les écrans.
+- [ ] Initialiser Citro3D et afficher une scène 3D.
+- [ ] Lire les commandes de la New 3DS.
+- [ ] Afficher une voiture prototype, une route et un environnement minimal.
+- [ ] Implémenter une caméra de poursuite.
+- [ ] Implémenter accélération, freinage, direction et mouvement.
+- [ ] Ajouter collisions simples avec route et obstacles.
+- [ ] Afficher vitesse et rapport sur l'écran inférieur.
+- [ ] Mesurer les performances sur New 3DS et profiler avant d'ajouter des détails.
+- [ ] Obtenir une démo stable et soignée avant d'élargir le périmètre.
+
+## Architecture du moteur
+- [ ] Moteur spécifique au jeu, écrit en C.
+- [ ] Modules séparés : core, input, render, physics, vehicle, world, generation, assets, UI, audio et save.
+- [ ] Citro3D pour le rendu PICA200 ; libctru pour les services système.
+- [ ] Séparer strictement géométrie visuelle, définition physique et état runtime des véhicules.
+- [ ] Boucle de jeu avec pas de simulation contrôlé et limite de rattrapage.
+- [ ] Mesurer CPU, GPU, mémoire, temps de génération et temps de frame sur la console.
+- [ ] Définir les budgets de mémoire, triangles, matériaux, textures et objets visibles à partir de mesures réelles.
+
+## Physique automobile personnalisée
+- [ ] Définir unités, échelle, repère et conventions de coordonnées.
+- [ ] Implémenter masse, inertie, centre de gravité et forces longitudinales/latérales.
+- [ ] Implémenter direction progressive avec inertie.
+- [ ] Implémenter accélération, freinage et frein à main.
+- [ ] Implémenter suspensions et transferts de charge.
+- [ ] Implémenter adhérence dépendant de la vitesse et de la surface.
+- [ ] Implémenter glisse, survirage, sous-virage et récupération.
+- [ ] Implémenter moteur, rapports et transmissions automatique/manuelle.
+- [ ] Ajouter progressivement ABS, antipatinage et aides configurables.
+- [ ] Ajouter dégâts mécaniques ciblés : moteur, transmission, pneus et suspension.
+- [ ] Ajouter dégâts visuels sans exiger une déformation complète de carrosserie.
+- [ ] Créer des comportements distincts par véhicule.
+- [ ] Écrire des tests numériques déterministes pour les fonctions physiques critiques.
+
+## Modèles 3D générés et personnalisables
+### Modèles intégrés
+- [ ] Générer en C des maillages simples pour voitures, roues, routes et objets de test.
+- [ ] Utiliser ces modèles intégrés pour les prototypes et comme solution de repli.
+
+### Importateur OBJ natif depuis la carte SD
+- [ ] Scanner sdmc:/3ds/forza3ds/models/.
+- [ ] Implémenter un parseur OBJ en C : sommets, UV, normales, groupes et faces.
+- [ ] Gérer indices positifs/négatifs, faces triangulaires et polygonales.
+- [ ] Trianguler les polygones et rejeter les géométries invalides.
+- [ ] Prendre en charge un sous-ensemble documenté des matériaux MTL.
+- [ ] Valider tailles, nombres d'éléments, indices, chemins et valeurs numériques.
+- [ ] Définir des limites pour éviter les allocations excessives.
+- [ ] Convertir les données en buffers compatibles Citro3D.
+- [ ] Générer un cache binaire versionné dans sdmc:/3ds/forza3ds/cache/models/.
+- [ ] Invalider le cache lorsque la source ou la version du convertisseur change.
+- [ ] Afficher des erreurs compréhensibles si un modèle est absent ou incompatible.
+
+### Paquet de modèle personnalisé
+Exemple d'organisation :
+sdmc:/3ds/forza3ds/models/cars/model-id/
+  model.obj
+  model.mtl
+  textures/
+  vehicle.cfg
+- [ ] Définir vehicle.cfg : identifiant, nom, échelle, orientation, origine, points d'attache des roues et boîte de collision.
+- [ ] Séparer carrosserie, roues et éléments optionnels.
+- [ ] Ne pas déduire masse ou caractéristiques mécaniques depuis le maillage OBJ.
+- [ ] Créer un menu listant les modèles détectés.
+- [ ] Créer un aperçu 3D rotatif avant validation.
+- [ ] Permettre importation, sélection, assignation et remplacement d'un modèle sur un véhicule.
+- [ ] Conserver les réglages mécaniques lors du remplacement visuel.
+- [ ] Enregistrer les assignations dans la sauvegarde.
+- [ ] Fournir un paquet OBJ de démonstration libre de droits.
+
+## Monde procédural
+### Génération déterministe
+- [ ] Générateur piloté par une graine personnalisable.
+- [ ] Sous-graines distinctes pour relief, biomes, routes, villes, bâtiments et détails.
+- [ ] Même graine = même relief, routes et villes.
+- [ ] Autoriser des variations de détails sans modifier la structure principale.
+- [ ] Versionner l'algorithme pour préserver les anciennes sauvegardes.
+
+### Île, relief et biomes
+- [ ] Générer une grande île montagneuse avec plusieurs péninsules.
+- [ ] Générer littoral, baies, vallées, crêtes, cols, plaines et reliefs secondaires.
+- [ ] Déterminer les biomes selon altitude, climat fictif et distance à la mer.
+- [ ] Générer forêts, bambouseraies, végétation côtière, campagnes et zones urbaines.
+- [ ] Générer rivières, lacs et cascades uniquement lorsque la topologie le permet.
+- [ ] Ajouter des règles de cohérence géographique.
+
+### Routes, villes et lieux
+- [ ] Générer les routes en suivant le relief naturel.
+- [ ] Réseau dense autour des villes et plus léger dans les zones sauvages.
+- [ ] Générer routes principales, secondaires, chemins et passages cachés.
+- [ ] Classer les segments selon leur usage : route, drift, montagne ou rallye.
+- [ ] Valider pentes, rayons de virage, raccordements et continuité.
+- [ ] Générer villes, villages, zones industrielles et bâtiments avec règles de densité et de taille.
+- [ ] Placer les voitures abandonnées selon le biome et le type de bâtiment.
+- [ ] En cas de zone invalide, relancer localement avec une sous-graine contrôlée.
+- [ ] Une relance locale ne doit pas modifier les secteurs déjà validés.
+
+### Monde logique et chargement 3D
+- [ ] Représenter toute l'île dans une structure logique compacte.
+- [ ] Charger en 3D uniquement les secteurs proches du joueur.
+- [ ] Décharger les secteurs éloignés sans perdre leur identité procédurale.
+- [ ] Définir niveaux de détail et distance d'affichage.
+- [ ] Mesurer la mémoire utilisée par secteur et catégorie d'objets.
+
+## Courses et IA
+- [ ] Générer des parcours sur les routes disponibles.
+- [ ] Vérifier continuité, sens, points de contrôle et faisabilité.
+- [ ] Rejeter puis régénérer localement un parcours impossible si la correction échoue.
+- [ ] Placer les événements sur des lieux physiques du monde.
+- [ ] Implémenter progressivement route, drift, montagne, rallye et contre-la-montre.
+- [ ] Ajouter une IA capable de suivre un parcours et de gérer freinage/accélération.
+- [ ] Adapter le nombre d'adversaires au budget CPU.
+- [ ] Calculer les récompenses selon classement et performance.
+- [ ] Enregistrer les records personnels.
+
+## Garage et véhicules
+- [ ] Créer un garage 3D avec caméra d'inspection.
+- [ ] Gérer la collection de véhicules.
+- [ ] Séparer données visuelles, physiques et mécaniques.
+- [ ] Permettre peintures, roues et modifications visuelles.
+- [ ] Prévoir améliorations moteur, transmission, pneus et suspension.
+- [ ] Ajouter découverte et restauration automatique des véhicules abandonnés.
+- [ ] Gérer réparations et pièces récupérées/achetées.
+- [ ] Ne pas implémenter d'usure générale permanente.
+
+## Interface, audio et sauvegarde
+- [ ] Écran supérieur : conduite ; écran inférieur : vitesse, compte-tours, rapport et informations.
+- [ ] Carte consultable à tout moment.
+- [ ] Plusieurs caméras interchangeables à terme.
+- [ ] Audio moteur prioritaire, vent et ambiance environnementale.
+- [ ] Cycle jour/nuit rapide avec éclairage adapté.
+- [ ] Sauvegarder graine, version du générateur, position, garage, assignations, réglages, argent, records et découvertes.
+- [ ] Versionner les sauvegardes et gérer les fichiers corrompus sans écraser une sauvegarde valide.
+- [ ] Régénérer les données immuables depuis la graine ; stocker explicitement tout état non dérivable.
+
+## Qualité, tests et livraison
+- [ ] Tests unitaires pour parseur OBJ, générateur et physique.
+- [ ] Vérifications de limites mémoire et de données invalides.
+- [ ] Compilation automatique devkitARM/libctru/Citro3D via GitHub Actions.
+- [ ] Publier le 3DSX comme artefact CI lorsque le build réussit.
+- [ ] Tester lancement, fermeture, contrôles et performances sur vraie New 3DS.
+- [ ] Documenter les fonctionnalités réellement terminées.
+- [ ] Ne pas confondre compilation réussie et fonctionnalité jouable.
+
+## Ordre de réalisation
+1. Base native et compilation.
+2. Scène 3D, contrôles et caméra.
+3. Première voiture et physique.
+4. Route, collisions et HUD.
+5. Profilage et optimisation sur New 3DS.
+6. Importateur OBJ et assignation des modèles.
+7. Générateur de terrain et streaming.
+8. Routes, biomes et implantations.
+9. Courses, IA et garage.
+10. Sauvegarde, audio et finition.
+
+## Décisions reportées
+- Budgets mémoire et polygones établis par mesures réelles.
+- Syntaxe définitive de vehicle.cfg et du cache figée avec l'importateur.
+- Algorithmes détaillés du terrain et des routes choisis lors de leur implémentation.
+- Caractéristiques physiques des voitures affinées avec les prototypes.
