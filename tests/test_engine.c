@@ -36,6 +36,9 @@ static void test_track_terrain_collision(void)
                track.pts[0].z+track.right[0].z*30.0f);
  float vx=10.0f,vz=0.0f;
  assert(track_resolve_collision(&track,&p,&vx,&vz)==0);
+ p=fvec3(320.0f,0.0f,0.0f);
+ assert(track_resolve_collision(&track,&p,&vx,&vz)==1);
+ assert(sqrtf(p.x*p.x+p.z*p.z)<260.0f);
  p=track.obstacles[0].center;
  assert(track_resolve_collision(&track,&p,&vx,&vz)==1);
 }

@@ -78,8 +78,18 @@ int track_resolve_collision(const F3DSTrack *t, FVec3 *pos, float *vx, float *vz
 {
 	int collided = 0;
 
-	/* The road is not a closed collision corridor: the island is freely explorable.
-	 * Only actual obstacle boxes below generate a collision response. */
+	/* Keep the vehicle on the island, but allow free driving away from the road. */
+	const float radius = sqrtf(pos->x * pos->x + pos->z * pos->z);
+	const float coast = 250.0f + 13.0f * sinf(pos->x * 0.018f) +
+			   10.0f * cosf(pos->z * 0.021f) - 5.0f;
+	if (radius > coast && radius > 0.001f) {
+		const float scale = coast / radius;
+		pos->x *= scale;
+		pos->z *= scale;
+		*vx *= 0.35f;
+		*vz *= 0.35f;
+		collided = 1;
+	}
 
 	/* Obstacle boxes, pushout along the axis of least penetration. */
 	const float carRadius = 0.9f;

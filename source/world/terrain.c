@@ -5,8 +5,7 @@ void terrain_init(F3DSTerrain *t, const F3DSTrack *track)
 	t->rampCount = 0;
 	t->slickCount = 0;
 
-	/* Two launch ramps aligned with the track direction, long approach
-	 * straight before each. */
+	/* Two drivable rises placed along the island road. */
 	const int rampIdx[2] = { 24, 64 };
 	for (int i = 0; i < 2; i++) {
 		const int idx = rampIdx[i];
@@ -21,7 +20,7 @@ void terrain_init(F3DSTerrain *t, const F3DSTrack *track)
 		r->height = i == 0 ? 3.2f : 2.2f;
 	}
 
-	/* Gravel/slick patches for grip testing. */
+	/* Gravel patches off the main asphalt. */
 	const int slickIdx[3] = { 12, 44, 84 };
 	for (int i = 0; i < 3; i++) {
 		const int idx = slickIdx[i];

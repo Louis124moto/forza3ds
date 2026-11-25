@@ -1,4 +1,4 @@
-/* Forza3DS - terrain test map features: ramps and low-grip surface zones.
+/* Forza3DS - island demo surface features: ramps and low-grip surface zones.
  * Used to exercise the physics (jumps, airborne state, surface grip) while
  * the procedural world (stage 7) is not implemented yet. */
 #ifndef F3DS_TERRAIN_H
@@ -31,7 +31,7 @@ typedef struct {
 	int slickCount;
 } F3DSTerrain;
 
-/* Build the default test layout along the demo track. */
+/* Build the fixed demo-island surface features. */
 void terrain_init(F3DSTerrain *t, const F3DSTrack *track);
 
 /* Ground height at a world position (0 outside features). */
