@@ -105,6 +105,7 @@ void engine_audio_exit(void)
 {
 	if (!s_ready)
 		return;
+	ndspChnWaveBufClear(0);
 	ndspChnReset(0);
 	for (int i = 0; i < ENGINE_BUFFERS; ++i) {
 		if (s_pcm[i]) linearFree(s_pcm[i]);
