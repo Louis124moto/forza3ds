@@ -1,3 +1,9 @@
+## Physique et camera — 25/11/2026
+- [x] Remplacer la reponse de lacet trop amortie par un modele de bicyclette (vitesse / empattement × tan(angle de braquage)), avec inertie de lacet bornee et influence moderee du differentiel.
+- [ ] Verifier sur New 3DS que le Circle Pad fait tourner le cap et la trajectoire dans les deux sens, a basse et haute vitesse.
+- [ ] Mesurer la synchronisation camera/voiture en conduite ; la camera de poursuite est calculee directement depuis la pose de la voiture apres les sous-etapes physiques, confirmer visuellement en jeu.
+- [ ] Refaire des essais freinage, marche arriere, frein a main et collisions apres validation du virage.
+
 # Forza3DS — TODO
 
 > Cahier des charges consolidé le 25 novembre 2026. Toutes les cases sont des tâches à réaliser, pas des fonctionnalités déjà présentes.
