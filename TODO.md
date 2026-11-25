@@ -151,6 +151,7 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Ne pas imposer de plafond artificiel aux réglages de préparation (pression de turbo, régime maximal et autres paramètres) ; faire ressentir clairement chaque modification dans le comportement du véhicule et la rendre nettement audible dans le son du moteur.
 - [ ] Permettre le réglage détaillé de la boîte de vitesses dans l'atelier : nombre de rapports, rapports individuels et démultiplication finale, avec des effets réels sur l'accélération, la vitesse et le comportement du véhicule.
 - [ ] Permettre le réglage des différentiels avant, central et arrière dans l'atelier, notamment leur taux de blocage et la répartition du couple, avec des effets réels sur la motricité et le comportement du véhicule.
+- [ ] Permettre le réglage individuel des suspensions dans l'atelier : hauteur, raideur des ressorts, compression et détente des amortisseurs, avec des effets réels sur la tenue de route et le comportement.
 - [ ] Ajouter découverte et restauration automatique des véhicules abandonnés.
 - [ ] Gérer réparations et pièces récupérées/achetées.
 - [ ] Ne pas implémenter d'usure générale permanente.
