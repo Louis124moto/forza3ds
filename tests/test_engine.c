@@ -87,12 +87,30 @@ static void test_tuning_changes_vehicle_response(void)
 	assert(isfinite(b.rpm) && isfinite(b.speed));
 }
 
+static void test_manual_gearbox(void)
+{
+	F3DSVehicleDef def;
+	F3DSVehicleState car;
+	F3DSInputState in;
+	F3DSTerrain terrain;
+	F3DSTrack track;
+	vehicle_def_default(&def);
+	def.manualTransmission = 1;
+	track_init(&track); terrain_init(&terrain, &track);
+	memset(&car, 0, sizeof(car)); memset(&in, 0, sizeof(in));
+	car.gear = 1; car.rpm = def.idleRpm; car.pos = track.pts[0];
+	in.gearUp = 1;
+	physics_vehicle_step(&def, &car, &in, &terrain, 1.0f / 60.0f);
+	assert(car.gear == 2);
+}
+
 int main(void)
 {
  test_fixed_timestep();
  test_track_terrain_collision();
  test_vehicle_acceleration_and_braking();
  test_tuning_changes_vehicle_response();
+ test_manual_gearbox();
  puts("Forza3DS deterministic engine tests: PASS");
  return 0;
 }
