@@ -16,7 +16,6 @@ static int uLoc_projection;
 static C3D_Mtx s_projection;
 static C3D_RenderTarget *s_target;
 static F3DSMeshes s_meshes;
-static C3D_BufInfo s_bufInfo;
 static bool s_garage;
 
 static C3D_FVec to_c3d(FVec3 v)
