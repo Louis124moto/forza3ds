@@ -67,8 +67,9 @@ void renderer_set_track(const F3DSTrack *track, const F3DSTerrain *terrain)
 	if (!s_meshes.data || s_meshes.total == 0)
 		return;
 
-	BufInfo_Init(&s_bufInfo);
-	BufInfo_Add(&s_bufInfo, s_meshes.data, sizeof(F3DSVertex), 2, 0x10);
+	C3D_BufInfo *bufInfo = C3D_GetBufInfo();
+	BufInfo_Init(bufInfo);
+	BufInfo_Add(bufInfo, s_meshes.data, sizeof(F3DSVertex), 2, 0x10);
 }
 
 static void draw(const F3DSMeshes *m, uint32_t start, uint32_t count)
