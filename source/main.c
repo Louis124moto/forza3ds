@@ -418,7 +418,7 @@ int main(int argc, char **argv)
 				if (input.menuDown) workshopSelected = (workshopSelected + 1) % count;
 				if (input.menuLeft) workshop_adjust(&def, workshopPage, workshopSelected, -1);
 				if (input.menuRight) workshop_adjust(&def, workshopPage, workshopSelected, 1);
-				if ((input.menuConfirm || input.menuBack) && workshopSelected == count - 1) {
+				if (input.menuBack || (input.menuConfirm && workshopSelected == count - 1)) {
 					workshopPage = WORKSHOP_HOME; workshopSelected = 0;
 				}
 				draw_workshop_page(workshopPage, workshopSelected, &def);
