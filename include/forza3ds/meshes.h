@@ -22,6 +22,7 @@ typedef struct {
 	uint32_t terrainStart, terrainCount;
 	uint32_t carStart, carCount;
 	uint32_t cockpitStart, cockpitCount;
+	uint32_t garageStart, garageCount;
 } F3DSMeshes;
 
 void meshes_build(F3DSMeshes *m, const F3DSTrack *track, const F3DSTerrain *terrain);
