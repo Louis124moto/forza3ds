@@ -6,54 +6,49 @@ void input_config_defaults(F3DSInputConfig *cfg)
 	cfg->deadzone = 0.12f;
 }
 
-static float pad_axis(int raw)
-{
-	return (float)raw / 156.0f;
-}
+static float pad_axis(int raw) { return (float)raw / 156.0f; }
 
 static float apply_deadzone(float v, float dz)
 {
-	if (v > dz) {
-		const float span = 1.0f - dz;
-		return (v - dz) / span;
-	}
-	if (v < -dz) {
-		const float span = 1.0f - dz;
-		return (v + dz) / span;
-	}
+	if (v > dz) return (v - dz) / (1.0f - dz);
+	if (v < -dz) return (v + dz) / (1.0f - dz);
 	return 0.0f;
 }
 
 void input_poll(F3DSInputState *in, const F3DSInputConfig *cfg)
 {
 	hidScanInput();
-	const u32 kDown = hidKeysDown();
-	const u32 kHeld = hidKeysHeld();
+	const u32 down = hidKeysDown();
+	const u32 held = hidKeysHeld();
 
-	in->throttle = (kHeld & KEY_A) ? 1.0f : 0.0f;
-	in->brake = (kHeld & KEY_B) ? 1.0f : 0.0f;
-	in->handbrake = (kHeld & KEY_Y) ? 1 : 0;
+	in->throttle = (held & KEY_A) ? 1.0f : 0.0f;
+	in->brake = (held & KEY_B) ? 1.0f : 0.0f;
+	in->handbrake = (held & KEY_Y) ? 1 : 0;
 
-	/* Circle pad steering: deadzone + sensitivity, no left/right inversion. */
 	circlePosition cp;
 	hidCircleRead(&cp);
 	const float raw = apply_deadzone(pad_axis(cp.dx), cfg->deadzone);
 	float curve = fabsf(raw);
 	curve = curve * curve * (3.0f - 2.0f * curve) * 0.5f + curve * 0.5f;
-	in->steer = (raw < 0.0f ? -curve : curve) * cfg->steerSensitivity;
-	in->steer = clampf(in->steer, -1.0f, 1.0f);
+	in->steer = clampf((raw < 0.0f ? -curve : curve) * cfg->steerSensitivity, -1.0f, 1.0f);
 
-	/* New 3DS C-stick for camera orbit. */
 	circlePosition cs;
 	hidCstickRead(&cs);
 	in->orbitYaw = apply_deadzone(pad_axis(cs.dx), 0.10f);
 	in->orbitPitch = apply_deadzone(pad_axis(cs.dy), 0.10f);
 
-	in->toggleView = (kDown & KEY_X) ? 1 : 0;
-	in->camDistanceDown = (kDown & KEY_DUP) ? 1 : 0;
-	in->camDistanceUp = (kDown & KEY_DDOWN) ? 1 : 0;
-	in->camHeightDown = (kDown & KEY_DLEFT) ? 1 : 0;
-	in->camHeightUp = (kDown & KEY_DRIGHT) ? 1 : 0;
+	in->toggleView = (down & KEY_X) ? 1 : 0;
+	in->camDistanceDown = (down & KEY_DUP) ? 1 : 0;
+	in->camDistanceUp = (down & KEY_DDOWN) ? 1 : 0;
+	in->camHeightDown = (down & KEY_DLEFT) ? 1 : 0;
+	in->camHeightUp = (down & KEY_DRIGHT) ? 1 : 0;
 
-	in->exit = (kDown & KEY_START) ? 1 : 0;
+	in->pausePressed = (down & KEY_START) ? 1 : 0;
+	in->menuUp = (down & KEY_DUP) ? 1 : 0;
+	in->menuDown = (down & KEY_DDOWN) ? 1 : 0;
+	in->menuLeft = (down & KEY_DLEFT) ? 1 : 0;
+	in->menuRight = (down & KEY_DRIGHT) ? 1 : 0;
+	in->menuConfirm = (down & KEY_A) ? 1 : 0;
+	in->menuBack = (down & KEY_B) ? 1 : 0;
+	in->exit = (down & KEY_SELECT) ? 1 : 0;
 }

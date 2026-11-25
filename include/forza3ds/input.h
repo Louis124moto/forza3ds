@@ -8,7 +8,6 @@ typedef struct {
 	float brake;
 	float steer;
 	int handbrake;
-
 	int toggleView;
 	float orbitYaw;
 	float orbitPitch;
@@ -16,7 +15,13 @@ typedef struct {
 	int camDistanceDown;
 	int camHeightUp;
 	int camHeightDown;
-
+	int pausePressed;
+	int menuUp;
+	int menuDown;
+	int menuLeft;
+	int menuRight;
+	int menuConfirm;
+	int menuBack;
 	int exit;
 } F3DSInputState;
 
