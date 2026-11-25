@@ -20,7 +20,7 @@ static bool s_garage;
 
 static C3D_FVec to_c3d(FVec3 v)
 {
-	C3D_FVec out = {{ v.x, v.y, v.z, 0.0f }};
+	C3D_FVec out = { .x = v.x, .y = v.y, .z = v.z, .w = 0.0f };
 	return out;
 }
 
@@ -110,7 +110,7 @@ void renderer_render(const F3DSCamera *cam, const F3DSVehicleState *car)
 
 	C3D_Mtx view;
 	Mtx_LookAt(&view, to_c3d(cam->eye), to_c3d(cam->target),
-		(C3D_FVec){{ 0.0f, 1.0f, 0.0f, 0.0f }}, false);
+		(C3D_FVec){ .x = 0.0f, .y = 1.0f, .z = 0.0f, .w = 0.0f }, false);
 
 	C3D_Mtx projView;
 	Mtx_Multiply(&projView, &s_projection, &view);
