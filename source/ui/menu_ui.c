@@ -4,25 +4,24 @@
 #define UI_W 320
 #define UI_H 240
 
-static u8 *s_framebuffer;
+static u16 *s_framebuffer;
 static u16 s_fb_width, s_fb_height;
 
 static void acquire_framebuffer(void)
 {
-	s_framebuffer = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, &s_fb_width, &s_fb_height);
+	s_framebuffer = (u16 *)gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, &s_fb_width, &s_fb_height);
 }
 
-/* libctru exposes the 3DS portrait-oriented BGR8 framebuffer. Convert the
- * logical landscape coordinates used by the bottom LCD to its tiled layout. */
+/* consoleInit(GFX_BOTTOM) switches the lower LCD to RGB565 and disables
+ * double buffering. Its framebuffer is stored column-major, exactly like
+ * libctru's console renderer: x * 240 + (239 - y). */
 static void pixel(int x, int y, u8 r, u8 g, u8 b)
 {
 	if (!s_framebuffer || x < 0 || x >= UI_W || y < 0 || y >= UI_H ||
 	    s_fb_width != 240 || s_fb_height != 320)
 		return;
-	const size_t offset = ((size_t)y * 320u + (size_t)(319 - x)) * 3u;
-	s_framebuffer[offset + 0] = b;
-	s_framebuffer[offset + 1] = g;
-	s_framebuffer[offset + 2] = r;
+	const size_t offset = (size_t)x * s_fb_width + (size_t)(s_fb_width - 1u - (u16)y);
+	s_framebuffer[offset] = RGB8_to_565(r, g, b);
 }
 
 static void rect(int x, int y, int w, int h, u8 r, u8 g, u8 b)
