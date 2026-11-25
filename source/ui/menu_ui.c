@@ -13,8 +13,7 @@ static void acquire_framebuffer(void)
 }
 
 /* consoleInit(GFX_BOTTOM) switches the lower LCD to RGB565 and disables
- * double buffering. Its framebuffer is stored column-major, exactly like
- * libctru's console renderer: x * 240 + (239 - y). */
+ * double buffering. Its framebuffer is column-major: x * 240 + (239 - y). */
 static void pixel(int x, int y, u8 r, u8 g, u8 b)
 {
 	if (!s_framebuffer || x < 0 || x >= UI_W || y < 0 || y >= UI_H ||
@@ -36,18 +35,39 @@ static void rect(int x, int y, int w, int h, u8 r, u8 g, u8 b)
 			pixel(px, py, r, g, b);
 }
 
+static void diagonal_stripe(int x, int y, int length, int thickness, u8 r, u8 g, u8 b)
+{
+	for (int i = 0; i < length; ++i)
+		rect(x + i, y + i / 2, thickness, 2, r, g, b);
+}
+
 void menu_ui_begin(void)
 {
 	acquire_framebuffer();
 	if (!s_framebuffer || s_fb_width != 240 || s_fb_height != 320)
 		return;
-	rect(0, 0, UI_W, UI_H, 10, 17, 29);
-	rect(0, 0, UI_W, 3, 0, 190, 220);
-	rect(0, 31, UI_W, 1, 33, 65, 83);
-	rect(0, 218, UI_W, 22, 7, 12, 21);
-	rect(0, 218, UI_W, 2, 0, 155, 190);
-	rect(12, 43, 3, 164, 0, 135, 170);
-	rect(305, 43, 3, 164, 0, 75, 100);
+
+	/* Motorsport-inspired charcoal dashboard with cyan telemetry accents. */
+	rect(0, 0, UI_W, UI_H, 11, 17, 25);
+	rect(0, 0, UI_W, 34, 17, 27, 38);
+	rect(0, 0, UI_W, 3, 0, 205, 225);
+	rect(0, 33, UI_W, 1, 54, 75, 88);
+	rect(0, 218, UI_W, 22, 7, 11, 17);
+	rect(0, 218, UI_W, 2, 0, 175, 198);
+
+	/* Subtle technical grid and right-side racing slashes. */
+	for (int x = 8; x < UI_W; x += 32)
+		rect(x, 39, 1, 170, 17, 27, 36);
+	for (int y = 47; y < 210; y += 32)
+		rect(8, y, 304, 1, 17, 27, 36);
+	diagonal_stripe(276, 5, 28, 2, 0, 178, 205);
+	diagonal_stripe(287, 5, 28, 2, 210, 77, 48);
+
+	/* Side rails and header/footer separators. */
+	rect(8, 42, 2, 166, 0, 145, 174);
+	rect(310, 42, 2, 166, 0, 77, 95);
+	rect(12, 35, 44, 2, 210, 77, 48);
+	rect(260, 214, 48, 2, 0, 190, 215);
 }
 
 void menu_ui_item(int terminal_row, int selected)
@@ -55,18 +75,22 @@ void menu_ui_item(int terminal_row, int selected)
 	if (!s_framebuffer) acquire_framebuffer();
 	const int y = (terminal_row - 1) * 8 + 1;
 	if (selected) {
-		rect(22, y, 276, 11, 0, 93, 119);
-		rect(22, y, 4, 11, 0, 220, 245);
-		rect(26, y, 272, 1, 60, 170, 190);
+		rect(18, y - 1, 284, 13, 0, 77, 98);
+		rect(18, y - 1, 3, 13, 0, 220, 235);
+		rect(21, y - 1, 281, 1, 76, 174, 190);
+		rect(21, y + 11, 281, 1, 0, 125, 150);
+		diagonal_stripe(280, y + 1, 8, 1, 0, 145, 164);
 	} else {
-		rect(22, y, 276, 11, 16, 29, 43);
-		rect(22, y + 10, 276, 1, 28, 48, 62);
+		rect(18, y - 1, 284, 13, 15, 25, 35);
+		rect(18, y + 11, 284, 1, 31, 45, 56);
 	}
 }
 
 void menu_ui_panel(int y, int height)
 {
 	if (!s_framebuffer) acquire_framebuffer();
-	rect(22, y, 276, height, 16, 29, 43);
-	rect(22, y, 3, height, 0, 135, 170);
+	rect(18, y, 284, height, 15, 25, 35);
+	rect(18, y, 3, height, 0, 165, 190);
+	rect(21, y, 281, 1, 54, 75, 88);
+	rect(21, y + height - 1, 281, 1, 31, 45, 56);
 }
