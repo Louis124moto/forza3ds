@@ -59,11 +59,40 @@ static void test_vehicle_acceleration_and_braking(void)
  assert(car.speed<before);
 }
 
+static void test_tuning_changes_vehicle_response(void)
+{
+	F3DSVehicleDef stock, tuned;
+	F3DSVehicleState a, b;
+	F3DSInputState in;
+	F3DSTrack track; F3DSTerrain terrain;
+	vehicle_def_default(&stock);
+	tuned = stock;
+	tuned.turboInstalled = 1;
+	tuned.turboBoostBar = 1.2f;
+	tuned.intakeLevel = 2;
+	tuned.exhaustLevel = 2;
+	assert(vehicle_engine_torque(&tuned, 3500.0f) > vehicle_engine_torque(&stock, 3500.0f));
+	assert(vehicle_sound_timbre(&tuned) > vehicle_sound_timbre(&stock));
+	track_init(&track); terrain_init(&terrain, &track);
+	memset(&a, 0, sizeof(a)); memset(&b, 0, sizeof(b)); memset(&in, 0, sizeof(in));
+	a.gear = b.gear = 1;
+	a.rpm = b.rpm = stock.idleRpm;
+	a.pos = b.pos = track.pts[0];
+	in.throttle = 1.0f;
+	for (int i = 0; i < 60; ++i) {
+		physics_vehicle_step(&stock, &a, &in, &terrain, 1.0f / 60.0f);
+		physics_vehicle_step(&tuned, &b, &in, &terrain, 1.0f / 60.0f);
+	}
+	assert(b.speed > a.speed);
+	assert(isfinite(b.rpm) && isfinite(b.speed));
+}
+
 int main(void)
 {
  test_fixed_timestep();
  test_track_terrain_collision();
  test_vehicle_acceleration_and_braking();
+ test_tuning_changes_vehicle_response();
  puts("Forza3DS deterministic engine tests: PASS");
  return 0;
 }
