@@ -21,7 +21,8 @@ int core_loop_advance(F3DSLoopState *st,float elapsed)
 }
 int core_loop_begin_frame(F3DSLoopState *st)
 {
- if(!st)return 0; const u64 now=svcGetSystemTick();
+ if (!st) return 0;
+ const u64 now=svcGetSystemTick();
  const float elapsed=(float)((double)(now-st->lastTick)/(double)F3DS_TICK_FREQ);
  st->lastTick=now; return core_loop_advance(st,elapsed);
 }
