@@ -157,6 +157,7 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Faire évoluer le son du moteur de manière réaliste selon le régime moteur (RPM) et la charge.
 - [ ] Adapter le son du moteur à la vue cockpit avec une atténuation et un filtrage réalistes depuis l'habitacle.
 - [ ] Adapter les sons à la pluie et aux surfaces mouillées : roulement, projections d'eau et bruits d'adhérence des pneus.
+- [ ] Produire des sons de roulement et d'adhérence distincts et réalistes selon le matériau de surface (asphalte, gravier, terre, herbe).
 - [ ] Spatialiser les sons en 3D selon leur direction et leur distance dans le monde.
 - [ ] Adapter la réverbération sonore à l'environnement (tunnels, garages et espaces ouverts).
 - [ ] Proposer des réglages de volume indépendants pour le moteur et l'ambiance environnementale.
