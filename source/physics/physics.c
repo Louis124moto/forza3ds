@@ -53,7 +53,15 @@ void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car,
 	if (car->gear > 0) {
 		if (car->gear > gearCount) car->gear = gearCount;
 		if (car->shiftTimer <= 0.0f) {
-			if (car->rpm > def->shiftUpRpm && car->gear < gearCount) {
+			if (def->manualTransmission) {
+				if (inRaw->gearUp && car->gear < gearCount) {
+					car->gear++;
+					car->shiftTimer = def->shiftTime;
+				} else if (inRaw->gearDown && car->gear > 1) {
+					car->gear--;
+					car->shiftTimer = def->shiftTime;
+				}
+			} else if (car->rpm > def->shiftUpRpm && car->gear < gearCount) {
 				car->gear++;
 				car->shiftTimer = def->shiftTime;
 			} else if (car->rpm < def->shiftDownRpm && car->gear > 1) {
