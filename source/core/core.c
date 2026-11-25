@@ -1,17 +1,13 @@
 #include "core.h"
 
-/*
- * libctru exposes svcGetSystemTick but no tick-frequency service on this
- * version. The ARM11 high-resolution timer runs at a fixed 268 MHz
- * (268111856.32 Hz, see the PICA hardware documentation). We use that
- * documented constant to convert ticks to seconds.
- */
+/* libctru system ticks run at 268111856 Hz on the 3DS. */
 #define F3DS_TICK_FREQ 268111856ull
 
 void core_loop_init(F3DSLoopState *st, float dt, float maxCatchUp)
 {
 	st->dt = dt;
 	st->maxCatchUp = maxCatchUp;
+	st->accumulator = 0.0f;
 	st->simTime = 0.0f;
 	st->frameTime = 0.0f;
 	st->lastTick = svcGetSystemTick();
@@ -26,9 +22,8 @@ int core_loop_begin_frame(F3DSLoopState *st)
 	const float elapsed = (float)((double)(now - st->lastTick) / (double)F3DS_TICK_FREQ);
 	st->lastTick = now;
 
-	float frameDt = elapsed;
-	st->frameTime = frameDt;
-	st->fpsAcc += frameDt;
+	st->frameTime = elapsed;
+	st->fpsAcc += elapsed;
 	st->frameCount++;
 	if (st->fpsAcc >= 1.0f) {
 		st->fps = st->frameCount;
@@ -36,18 +31,18 @@ int core_loop_begin_frame(F3DSLoopState *st)
 		st->fpsAcc -= 1.0f;
 	}
 
-	if (frameDt > 1.0f)
-		frameDt = 1.0f; /* long stall: reset the accumulator */
-
-	float acc = frameDt;
+	/* Preserve fractional frame time between calls. A long stall is bounded
+	 * and excess whole simulation steps are discarded after max catch-up. */
+		st->accumulator += elapsed > 1.0f ? 1.0f : elapsed;
+	const int maxSteps = st->dt > 0.0f ? (int)(st->maxCatchUp / st->dt) : 0;
 	int steps = 0;
-	const int maxSteps = (int)(st->maxCatchUp / st->dt);
-	while (acc >= st->dt && steps < maxSteps) {
-		acc -= st->dt;
-		steps++;
+	while (st->dt > 0.0f && st->accumulator >= st->dt && steps < maxSteps) {
+		st->accumulator -= st->dt;
 		st->simTime += st->dt;
+		steps++;
 	}
-	(void)acc;
+	if (steps == maxSteps && st->dt > 0.0f && st->accumulator >= st->dt)
+		st->accumulator = fmodf(st->accumulator, st->dt);
 	return steps;
 }
 
