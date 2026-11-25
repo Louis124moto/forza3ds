@@ -19,7 +19,7 @@ SOURCES     :=  source source/core source/render source/input source/physics \
                 source/vehicle source/world source/generation source/assets \
                 source/ui source/audio source/save
 DATA        :=  data
-INCLUDES    :=  include
+INCLUDES    :=  include include/forza3ds
 GRAPHICS    :=  gfx
 GFXBUILD    :=  $(BUILD)
 
