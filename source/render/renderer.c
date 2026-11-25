@@ -17,6 +17,7 @@ static C3D_Mtx s_projection;
 static C3D_RenderTarget *s_target;
 static F3DSMeshes s_meshes;
 static C3D_BufInfo s_bufInfo;
+static bool s_garage;
 
 static C3D_FVec to_c3d(FVec3 v)
 {
@@ -52,6 +53,11 @@ void renderer_init(void)
 	Mtx_PerspTilt(&s_projection, 62.0f * F3DS_PI / 180.0f, 400.0f / 240.0f, 0.15f, 600.0f, false);
 
 	memset(&s_meshes, 0, sizeof(s_meshes));
+}
+
+void renderer_set_garage(bool enabled)
+{
+	s_garage = enabled;
 }
 
 void renderer_set_track(const F3DSTrack *track, const F3DSTerrain *terrain)
@@ -100,11 +106,15 @@ void renderer_render(const F3DSCamera *cam, const F3DSVehicleState *car)
 	Mtx_Multiply(&projView, &s_projection, &view);
 	C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projView);
 
-	draw(&s_meshes, s_meshes.groundStart, s_meshes.groundCount);
-	draw(&s_meshes, s_meshes.roadStart, s_meshes.roadCount);
-	draw(&s_meshes, s_meshes.obstacleStart, s_meshes.obstacleCount);
-	draw(&s_meshes, s_meshes.decorStart, s_meshes.decorCount);
-	draw(&s_meshes, s_meshes.terrainStart, s_meshes.terrainCount);
+	if (s_garage) {
+		draw(&s_meshes, s_meshes.garageStart, s_meshes.garageCount);
+	} else {
+		draw(&s_meshes, s_meshes.groundStart, s_meshes.groundCount);
+		draw(&s_meshes, s_meshes.roadStart, s_meshes.roadCount);
+		draw(&s_meshes, s_meshes.obstacleStart, s_meshes.obstacleCount);
+		draw(&s_meshes, s_meshes.decorStart, s_meshes.decorCount);
+		draw(&s_meshes, s_meshes.terrainStart, s_meshes.terrainCount);
+	}
 
 	set_car_matrix(car, &view);
 	draw(&s_meshes, s_meshes.cockpitStart, s_meshes.cockpitCount);
