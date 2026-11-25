@@ -8,6 +8,8 @@ typedef struct {
 	float brake;
 	float steer;
 	int handbrake;
+	int gearUp;
+	int gearDown;
 	int toggleView;
 	float orbitYaw;
 	float orbitPitch;
