@@ -7,7 +7,8 @@
 #include "track.h"
 #include "vehicle.h"
 
-void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car, const F3DSInputState *in, float dt);
+void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car, const F3DSInputState *in,
+			 const F3DSTerrain *terrain, float dt);
 void physics_step(const F3DSVehicleDef *def, F3DSVehicleState *car, const F3DSInputState *in,
 		  const F3DSTrack *track, const F3DSTerrain *terrain, float dt);
 
