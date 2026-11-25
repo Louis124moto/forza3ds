@@ -35,6 +35,7 @@ jobs:
           export PATH="$DEVKITARM/bin:$PATH"
           command -v arm-none-eabi-gcc
           command -v make
+          command -v picasso
 
       - name: Build and install Citro3D
         run: |
@@ -44,10 +45,18 @@ jobs:
           make -C "$RUNNER_TEMP/citro3d" install
 
       - name: Build 3DSX
+        id: build
         run: |
           export PATH="$DEVKITARM/bin:$PATH"
-          make clean
-          make -j2
+          if ! make 2> make_err.txt; then
+            echo "Build failed. Compiler/linker output:"
+            cat make_err.txt
+            # Stream the first error lines as job annotations.
+            head -n 40 make_err.txt | while IFS= read -r line; do
+              echo "::error ::$line"
+            done
+            exit 1
+          fi
 
       - name: Upload homebrew build
         uses: actions/upload-artifact@v4
@@ -56,3 +65,7 @@ jobs:
           path: forza3ds.3dsx
           if-no-files-found: error
           retention-days: 14
+
+      - name: Build diagnostics
+        if: failure() && steps.build.outcome == 'failure'
+        run: test -f make_err.txt && head -n 20 make_err.txt || true
