@@ -28,9 +28,9 @@ Jeu de conduite 3D natif pour New Nintendo 3DS, écrit en C avec devkitARM, libc
 ## Première démo jouable — priorité absolue
 - [ ] Initialiser l'application native et les écrans.
 - [ ] Initialiser Citro3D et afficher une scène 3D.
-- [ ] Lire les commandes de la New 3DS.
+- [ ] Lire les commandes de la New 3DS, permettre leur reconfiguration, et exposer sensibilité de direction et zone morte du Circle Pad réglables. Pas d'option d'inversion gauche/droite.
 - [ ] Afficher une voiture prototype, une route et un environnement minimal.
-- [ ] Implémenter une caméra de poursuite.
+- [ ] Implémenter le système de caméra libre : orbite autour du véhicule au C-stick de la New 3DS, distance et hauteur réglables, recentrage automatique derrière le véhicule après relâchement et au redémarrage depuis l'arrêt, vitesse de recentrage réglable, vues extérieure et cockpit, positions personnalisées sauvegardables globalement (pas par véhicule). La caméra ne permet pas de déplacement vertical libre. La vue cockpit affiche le volant et le tableau de bord, avec position standard non réglable.
 - [ ] Implémenter accélération, freinage, direction et mouvement.
 - [ ] Ajouter collisions simples avec route et obstacles.
 - [ ] Afficher vitesse et rapport sur l'écran inférieur.
@@ -42,7 +42,7 @@ Jeu de conduite 3D natif pour New Nintendo 3DS, écrit en C avec devkitARM, libc
 - [ ] Modules séparés : core, input, render, physics, vehicle, world, generation, assets, UI, audio et save.
 - [ ] Citro3D pour le rendu PICA200 ; libctru pour les services système.
 - [ ] Séparer strictement géométrie visuelle, définition physique et état runtime des véhicules.
-- [ ] Boucle de jeu avec pas de simulation contrôlé et limite de rattrapage.
+- [ ] Boucle de jeu avec pas de simulation fixe configurable par profils prédéfinis (compromis performance / réalisme) et limite de rattrapage.
 - [ ] Mesurer CPU, GPU, mémoire, temps de génération et temps de frame sur la console.
 - [ ] Définir les budgets de mémoire, triangles, matériaux, textures et objets visibles à partir de mesures réelles.
 
@@ -56,8 +56,6 @@ Jeu de conduite 3D natif pour New Nintendo 3DS, écrit en C avec devkitARM, libc
 - [ ] Implémenter glisse, survirage, sous-virage et récupération.
 - [ ] Implémenter moteur, rapports et transmissions automatique/manuelle.
 - [ ] Ajouter progressivement ABS, antipatinage et aides configurables.
-- [ ] Ajouter dégâts mécaniques ciblés : moteur, transmission, pneus et suspension.
-- [ ] Ajouter dégâts visuels sans exiger une déformation complète de carrosserie.
 - [ ] Créer des comportements distincts par véhicule.
 - [ ] Écrire des tests numériques déterministes pour les fonctions physiques critiques.
 
@@ -154,11 +152,15 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 ## Interface, audio et sauvegarde
 - [ ] Écran supérieur : conduite ; écran inférieur : vitesse, compte-tours, rapport et informations.
 - [ ] Carte consultable à tout moment.
-- [ ] Plusieurs caméras interchangeables à terme.
+- [ ] Caméra extérieure libre et caméra cockpit interchangeables, avec positions personnalisées globales sauvegardées ; voir les règles détaillées dans la section Première démo jouable.
 - [ ] Audio moteur prioritaire, vent et ambiance environnementale.
 - [ ] Cycle jour/nuit rapide avec éclairage adapté.
-- [ ] Sauvegarder graine, version du générateur, position, garage, assignations, réglages, argent, records et découvertes.
+- [ ] Sauvegarder manuellement la progression (graine, version du générateur, position, garage, assignations, réglages, argent, records et découvertes), avec sauvegarde rapide accessible depuis le menu pause ; une seule sauvegarde de progression. Ne pas sauvegarder automatiquement la progression à la fermeture.
+- [ ] Sauvegarder automatiquement les réglages de commandes, caméra et graphismes.
 - [ ] Versionner les sauvegardes et gérer les fichiers corrompus sans écraser une sauvegarde valide.
+- [ ] Menu de réglages graphiques : qualité des textures, ombres et distance d'affichage.
+- [ ] Limiteur FPS configurable et compteur FPS temps réel activable/masquable ; aucun panneau de statistiques CPU/GPU/mémoire, benchmark intégré ou détection automatique des réglages.
+- [ ] Mettre en pause la simulation physique lorsque le joueur met le jeu en pause.
 - [ ] Régénérer les données immuables depuis la graine ; stocker explicitement tout état non dérivable.
 
 ## Qualité, tests et livraison
