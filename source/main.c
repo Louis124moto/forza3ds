@@ -157,7 +157,7 @@ static int workshop_count(F3DSWorkshopPage page)
 {
 	switch (page) {
 	case WORKSHOP_ENGINE: return 10;
-	case WORKSHOP_GEARBOX: return 9;
+	case WORKSHOP_GEARBOX: return 10;
 	case WORKSHOP_DIFF: return 5;
 	case WORKSHOP_SUSPENSION: return 5;
 	case WORKSHOP_TIRES: return 3;
@@ -183,10 +183,11 @@ static void workshop_adjust(F3DSVehicleDef *d, F3DSWorkshopPage page, int item, 
 		}
 		break;
 	case WORKSHOP_GEARBOX:
-		if (item == 0) d->gearCount = (int)clampf((float)d->gearCount + dir, 1.0f, F3DS_GEARS);
-		else if (item == 1) d->finalDrive = fmaxf(0.5f, d->finalDrive + dir * 0.05f);
-		else if (item >= 2 && item <= 7) d->gearRatios[item - 2] =
-			fmaxf(0.2f, d->gearRatios[item - 2] + dir * 0.05f);
+		if (item == 0) d->manualTransmission = !d->manualTransmission;
+		else if (item == 1) d->gearCount = (int)clampf((float)d->gearCount + dir, 1.0f, F3DS_GEARS);
+		else if (item == 2) d->finalDrive = fmaxf(0.5f, d->finalDrive + dir * 0.05f);
+		else if (item >= 3 && item <= 8) d->gearRatios[item - 3] =
+			fmaxf(0.2f, d->gearRatios[item - 3] + dir * 0.05f);
 		break;
 	case WORKSHOP_DIFF:
 		if (item == 0) d->diffFrontLock = clampf(d->diffFrontLock + dir * 0.05f, 0.0f, 1.0f);
@@ -228,11 +229,12 @@ static void draw_workshop_page(F3DSWorkshopPage page, int selected, const F3DSVe
 		printf("\x1b[16;4H%s Retour", selected == 9 ? ">" : " ");
 	} else if (page == WORKSHOP_GEARBOX) {
 		printf("\x1b[4;4HBoite de vitesses");
-		printf("\x1b[6;4H%s Nombre de rapports : %d", selected == 0 ? ">" : " ", d->gearCount);
-		printf("\x1b[7;4H%s Couple final : %.2f", selected == 1 ? ">" : " ", d->finalDrive);
+		printf("\x1b[6;4H%s Transmission : %s", selected == 0 ? ">" : " ", d->manualTransmission ? "manuelle" : "automatique");
+		printf("\x1b[7;4H%s Nombre de rapports : %d", selected == 1 ? ">" : " ", d->gearCount);
+		printf("\x1b[8;4H%s Couple final : %.2f", selected == 2 ? ">" : " ", d->finalDrive);
 		for (int i = 0; i < F3DS_GEARS; ++i)
-			printf("\x1b[%d;4H%s Rapport %d : %.2f", 8 + i, selected == i + 2 ? ">" : " ", i + 1, d->gearRatios[i]);
-		printf("\x1b[15;4H%s Retour", selected == 8 ? ">" : " ");
+			printf("\x1b[%d;4H%s Rapport %d : %.2f", 9 + i, selected == i + 3 ? ">" : " ", i + 1, d->gearRatios[i]);
+		printf("\x1b[16;4H%s Retour", selected == 9 ? ">" : " ");
 	} else if (page == WORKSHOP_DIFF) {
 		printf("\x1b[4;4HDifferentiels");
 		printf("\x1b[6;4H%s Blocage avant : %.2f", selected == 0 ? ">" : " ", d->diffFrontLock);
@@ -479,6 +481,7 @@ int main(int argc, char **argv)
 				for (int i = 0; i < steps; ++i) {
 					physics_step(&def, &car, &input, &track, &terrain, loop.dt);
 					input.toggleView = 0;
+					input.gearUp = input.gearDown = 0;
 					input.camDistanceUp = input.camDistanceDown = 0;
 					input.camHeightUp = input.camHeightDown = 0;
 				}
