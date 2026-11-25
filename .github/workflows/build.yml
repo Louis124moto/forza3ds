@@ -7,7 +7,6 @@ on:
       - "source/**"
       - "include/**"
       - "tests/**"
-      - "tests/**"
       - "Makefile"
       - ".github/workflows/build.yml"
   pull_request:
@@ -80,7 +79,7 @@ jobs:
       - name: Compile deterministic engine tests
         run: |
           cc -std=c11 -Wall -Wextra -Werror \
-            -Itests/stubs -Iinclude/forza3ds \
+            -Itests -Iinclude/forza3ds \
             tests/test_engine.c \
             source/core/core.c source/physics/physics.c \
             source/world/track.c source/world/terrain.c \
