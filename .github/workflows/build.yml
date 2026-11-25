@@ -8,12 +8,16 @@ on:
       - "include/**"
       - "tests/**"
       - "Makefile"
+      - "README.md"
+      - "docs/**"
       - ".github/workflows/build.yml"
   pull_request:
     paths:
       - "source/**"
       - "include/**"
       - "Makefile"
+      - "README.md"
+      - "docs/**"
       - ".github/workflows/build.yml"
   workflow_dispatch:
 
