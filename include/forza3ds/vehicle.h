@@ -31,7 +31,7 @@ typedef struct {
 	float idleRpm, maxRpm, torqueBase, torqueFallRpm;
 	float turboBoostBar;
 	int turboInstalled;
-	int intakeLevel, exhaustLevel, camshaftLevel, injectorLevel;
+	int intakeLevel, exhaustLevel, camshaftLevel, injectorLevel, pistonLevel;
 	int cylinders;
 	float displacementLitres;
 	float shiftUpRpm, shiftDownRpm, shiftTime;
