@@ -48,6 +48,7 @@ void renderer_init(void)
 	C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
 
 	C3D_CullFace(GPU_CULL_NONE);
+	C3D_DepthTest(true, GPU_GEQUAL, GPU_WRITE_ALL);
 
 	Mtx_PerspTilt(&s_projection, 62.0f * F3DS_PI / 180.0f, 400.0f / 240.0f, 0.15f, 600.0f, false);
 
@@ -91,17 +92,8 @@ static void set_car_matrix(const F3DSVehicleState *car, const C3D_Mtx *view)
 void renderer_render(const F3DSCamera *cam, const F3DSVehicleState *car)
 {
 	C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-	C3D_FrameDrawOn(s_target);
 	C3D_RenderTargetClear(s_target, C3D_CLEAR_ALL, CLEAR_COLOR, 0);
-	C3D_BindProgram(&s_program);
-	C3D_AttrInfo *attrInfo = C3D_GetAttrInfo();
-	AttrInfo_Init(attrInfo);
-	AttrInfo_AddLoader(attrInfo, 0, GPU_FLOAT, 3);
-	AttrInfo_AddLoader(attrInfo, 1, GPU_FLOAT, 4);
-	C3D_BufInfo *bufInfo = C3D_GetBufInfo();
-	BufInfo_Init(bufInfo);
-	BufInfo_Add(bufInfo, s_meshes.data, sizeof(F3DSVertex), 2, 0x10);
-	C3D_DepthTest(true, GPU_GEQUAL, GPU_WRITE_ALL);
+	C3D_FrameDrawOn(s_target);
 
 	if (!s_meshes.data || s_meshes.total == 0) {
 		C3D_FrameEnd(0);
