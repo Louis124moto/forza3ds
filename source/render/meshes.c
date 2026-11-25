@@ -2,6 +2,12 @@
 
 #define MESH_MAX_VERTS 30000
 
+static unsigned int map_rng(unsigned int *state)
+{
+	*state = *state * 1664525u + 1013904223u;
+	return *state;
+}
+
 typedef struct {
 	F3DSVertex *v;
 	uint32_t n, cap;
@@ -48,11 +54,62 @@ void meshes_build(F3DSMeshes *m, const F3DSTrack *track, const F3DSTerrain *terr
 	b.v = (F3DSVertex *)linearAlloc(cap * sizeof(F3DSVertex));
 	b.n = 0;
 	b.cap = cap;
+	if (!b.v) {
+		memset(m, 0, sizeof(*m));
+		return;
+	}
 
-	/* --- Ground plane (grass) --- */
+	/* --- Main island: ocean, irregular shoreline and low-poly forests. --- */
 	m->groundStart = 0;
-	push_quad(&b, fvec3(-300, -0.05f, -300), fvec3(-300, -0.05f, 300), fvec3(300, -0.05f, 300), fvec3(300, -0.05f, -300),
-		  0.16f, 0.42f, 0.15f);
+	push_quad(&b, fvec3(-520, -1.2f, -520), fvec3(-520, -1.2f, 520),
+		  fvec3(520, -1.2f, 520), fvec3(520, -1.2f, -520), 0.08f, 0.34f, 0.52f);
+
+	const int grid = 32;
+	const float cell = 560.0f / (float)grid;
+	for (int iz = 0; iz < grid; iz++) {
+		for (int ix = 0; ix < grid; ix++) {
+			const float x0 = -280.0f + (float)ix * cell;
+			const float z0 = -280.0f + (float)iz * cell;
+			const float x1 = x0 + cell, z1 = z0 + cell;
+			const float cx = (x0 + x1) * 0.5f, cz = (z0 + z1) * 0.5f;
+			const float edge = 250.0f + 13.0f * sinf(cx * 0.018f) + 10.0f * cosf(cz * 0.021f);
+			if (cx * cx + cz * cz > edge * edge) continue;
+			const int beach = cx * cx + cz * cz > (edge - 18.0f) * (edge - 18.0f);
+			const float green = beach ? 0.56f : 0.34f + 0.06f * sinf(cx * 0.04f + cz * 0.02f);
+			push_quad(&b, fvec3(x0, -0.05f, z0), fvec3(x0, -0.05f, z1),
+				  fvec3(x1, -0.05f, z1), fvec3(x1, -0.05f, z0),
+				  beach ? 0.68f : 0.13f, green, beach ? 0.34f : 0.13f);
+		}
+	}
+
+	/* Deterministic tree clusters around the island's outer hills. */
+	unsigned int seed = 0xF03A3D5u;
+	for (int i = 0; i < 76; i++) {
+		const float a = (float)(map_rng(&seed) & 0xFFFFu) * (2.0f * F3DS_PI / 65535.0f);
+		const float radius = 188.0f + (float)(map_rng(&seed) & 0xFFFFu) * (48.0f / 65535.0f);
+		const float x = cosf(a) * radius;
+		const float z = sinf(a) * radius;
+		const float h = 2.8f + (float)(map_rng(&seed) & 0xFFFFu) * (2.2f / 65535.0f);
+		const float crown = 1.4f + (float)(map_rng(&seed) & 0xFFFFu) * (0.9f / 65535.0f);
+		push_box(&b, x - 0.22f, 0.0f, z - 0.22f, x + 0.22f, h, z + 0.22f, 0.30f, 0.17f, 0.08f);
+		push_box(&b, x - crown, h - 0.3f, z - crown, x + crown, h + crown * 1.4f, z + crown, 0.08f, 0.34f, 0.13f);
+	}
+
+	/* Distant rocky peaks frame the northern and eastern skyline. */
+	for (int i = 0; i < 9; i++) {
+		const float a = 0.35f + (float)i * 0.31f;
+		const float x = cosf(a) * 255.0f;
+		const float z = sinf(a) * 255.0f;
+		const float h = 18.0f + (float)(i % 4) * 5.0f;
+		const float radius = 17.0f + (float)(i % 3) * 5.0f;
+		for (int side = 0; side < 8; side++) {
+			const float a0 = (float)side * F3DS_PI / 4.0f;
+			const float a1 = (float)(side + 1) * F3DS_PI / 4.0f;
+			push_tri(&b, fvec3(x + cosf(a0) * radius, 0.0f, z + sinf(a0) * radius),
+				 fvec3(x + cosf(a1) * radius, 0.0f, z + sinf(a1) * radius),
+				 fvec3(x, h, z), 0.30f, 0.34f, 0.32f);
+		}
+	}
 	m->groundCount = b.n - m->groundStart;
 
 	/* --- Road --- */
