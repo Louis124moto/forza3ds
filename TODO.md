@@ -155,6 +155,7 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Caméra extérieure libre et caméra cockpit interchangeables, avec positions personnalisées globales sauvegardées ; voir les règles détaillées dans la section Première démo jouable.
 - [ ] Audio moteur prioritaire, vent et ambiance environnementale.
 - [ ] Faire évoluer le son du moteur de manière réaliste selon le régime moteur (RPM) et la charge.
+- [ ] Adapter le son du moteur à la vue cockpit avec une atténuation et un filtrage réalistes depuis l'habitacle.
 - [ ] Spatialiser les sons en 3D selon leur direction et leur distance dans le monde.
 - [ ] Adapter la réverbération sonore à l'environnement (tunnels, garages et espaces ouverts).
 - [ ] Proposer des réglages de volume indépendants pour le moteur et l'ambiance environnementale.
