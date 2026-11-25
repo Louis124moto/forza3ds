@@ -15,6 +15,7 @@ typedef struct {
 	int camDistanceDown;
 	int camHeightUp;
 	int camHeightDown;
+	u32 keysDown;
 	int pausePressed;
 	int menuUp;
 	int menuDown;
@@ -28,6 +29,10 @@ typedef struct {
 typedef struct {
 	float steerSensitivity;
 	float deadzone;
+	u32 keyThrottle;
+	u32 keyBrake;
+	u32 keyHandbrake;
+	u32 keyCamera;
 } F3DSInputConfig;
 
 void input_config_defaults(F3DSInputConfig *cfg);

@@ -4,6 +4,10 @@ void input_config_defaults(F3DSInputConfig *cfg)
 {
 	cfg->steerSensitivity = 1.0f;
 	cfg->deadzone = 0.12f;
+	cfg->keyThrottle = KEY_A;
+	cfg->keyBrake = KEY_B;
+	cfg->keyHandbrake = KEY_Y;
+	cfg->keyCamera = KEY_X;
 }
 
 static float pad_axis(int raw) { return (float)raw / 156.0f; }
@@ -20,10 +24,11 @@ void input_poll(F3DSInputState *in, const F3DSInputConfig *cfg)
 	hidScanInput();
 	const u32 down = hidKeysDown();
 	const u32 held = hidKeysHeld();
+	in->keysDown = down;
 
-	in->throttle = (held & KEY_A) ? 1.0f : 0.0f;
-	in->brake = (held & KEY_B) ? 1.0f : 0.0f;
-	in->handbrake = (held & KEY_Y) ? 1 : 0;
+	in->throttle = (held & cfg->keyThrottle) ? 1.0f : 0.0f;
+	in->brake = (held & cfg->keyBrake) ? 1.0f : 0.0f;
+	in->handbrake = (held & cfg->keyHandbrake) ? 1 : 0;
 
 	circlePosition cp;
 	hidCircleRead(&cp);
@@ -37,7 +42,7 @@ void input_poll(F3DSInputState *in, const F3DSInputConfig *cfg)
 	in->orbitYaw = apply_deadzone(pad_axis(cs.dx), 0.10f);
 	in->orbitPitch = apply_deadzone(pad_axis(cs.dy), 0.10f);
 
-	in->toggleView = (down & KEY_X) ? 1 : 0;
+	in->toggleView = (down & cfg->keyCamera) ? 1 : 0;
 	in->camDistanceDown = (down & KEY_DUP) ? 1 : 0;
 	in->camDistanceUp = (down & KEY_DDOWN) ? 1 : 0;
 	in->camHeightDown = (down & KEY_DLEFT) ? 1 : 0;

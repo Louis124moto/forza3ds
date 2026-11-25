@@ -18,8 +18,9 @@
 
 #define SETTINGS_PATH "sdmc:/3ds/forza3ds/settings.bin"
 #define SETTINGS_MAGIC 0x46334453u
-#define SETTINGS_VERSION 1u
-#define MENU_ITEMS 10
+#define SETTINGS_VERSION 2u
+#define MENU_ITEMS 14
+#define REBIND_KEY_MASK (KEY_A | KEY_B | KEY_X | KEY_Y | KEY_L | KEY_R | KEY_ZL | KEY_ZR)
 
 typedef struct {
 	u32 magic;
@@ -31,6 +32,13 @@ typedef struct {
 	float recenterSpeed;
 	int fpsLimit;
 	int hudVisible;
+	u32 keyThrottle;
+	u32 keyBrake;
+	u32 keyHandbrake;
+	u32 keyCamera;
+	float orbitYaw;
+	float orbitPitch;
+	int cameraMode;
 } F3DSSettings;
 
 static void settings_defaults(F3DSSettings *s)
@@ -45,6 +53,13 @@ static void settings_defaults(F3DSSettings *s)
 	s->recenterSpeed = 2.5f;
 	s->fpsLimit = 60;
 	s->hudVisible = 1;
+	s->keyThrottle = KEY_A;
+	s->keyBrake = KEY_B;
+	s->keyHandbrake = KEY_Y;
+	s->keyCamera = KEY_X;
+	s->orbitYaw = 0.0f;
+	s->orbitPitch = 0.35f;
+	s->cameraMode = F3DS_CAM_CHASE;
 }
 
 static void settings_load(F3DSSettings *s)
@@ -65,7 +80,19 @@ static void settings_load(F3DSSettings *s)
 	    loaded.chaseHeight < 1.0f || loaded.chaseHeight > 12.0f ||
 	    loaded.recenterSpeed < 0.2f || loaded.recenterSpeed > 8.0f ||
 	    (loaded.fpsLimit != 30 && loaded.fpsLimit != 60) ||
-	    (loaded.hudVisible != 0 && loaded.hudVisible != 1))
+	    (loaded.hudVisible != 0 && loaded.hudVisible != 1) ||
+	    !isfinite(loaded.orbitYaw) || !isfinite(loaded.orbitPitch) ||
+	    fabsf(loaded.orbitYaw) > 10000.0f || loaded.orbitPitch < -0.15f || loaded.orbitPitch > 1.1f ||
+	    (loaded.cameraMode != F3DS_CAM_CHASE && loaded.cameraMode != F3DS_CAM_COCKPIT) ||
+	    	    !(loaded.keyThrottle & REBIND_KEY_MASK) || !(loaded.keyBrake & REBIND_KEY_MASK) ||
+	    !(loaded.keyHandbrake & REBIND_KEY_MASK) || !(loaded.keyCamera & REBIND_KEY_MASK) ||
+	    (loaded.keyThrottle & ~REBIND_KEY_MASK) || (loaded.keyBrake & ~REBIND_KEY_MASK) ||
+	    (loaded.keyHandbrake & ~REBIND_KEY_MASK) || (loaded.keyCamera & ~REBIND_KEY_MASK) ||
+	    (loaded.keyThrottle & (loaded.keyThrottle - 1u)) || (loaded.keyBrake & (loaded.keyBrake - 1u)) ||
+	    (loaded.keyHandbrake & (loaded.keyHandbrake - 1u)) || (loaded.keyCamera & (loaded.keyCamera - 1u)) ||
+	    loaded.keyThrottle == loaded.keyBrake || loaded.keyThrottle == loaded.keyHandbrake ||
+	    loaded.keyThrottle == loaded.keyCamera || loaded.keyBrake == loaded.keyHandbrake ||
+	    loaded.keyBrake == loaded.keyCamera || loaded.keyHandbrake == loaded.keyCamera)
 		return;
 	*s = loaded;
 }
@@ -81,12 +108,41 @@ static int settings_save(const F3DSSettings *s)
 	return ok;
 }
 
+static const char *key_name(u32 key)
+{
+	switch (key) {
+	case KEY_A: return "A"; case KEY_B: return "B"; case KEY_X: return "X"; case KEY_Y: return "Y";
+	case KEY_L: return "L"; case KEY_R: return "R"; case KEY_ZL: return "ZL"; case KEY_ZR: return "ZR";
+	default: return "?";
+	}
+}
+
+static int key_is_used(const F3DSSettings *s, int action, u32 key)
+{
+	if (action != 1 && s->keyThrottle == key) return 1;
+	if (action != 2 && s->keyBrake == key) return 1;
+	if (action != 3 && s->keyHandbrake == key) return 1;
+	if (action != 4 && s->keyCamera == key) return 1;
+	return 0;
+}
+
+static void assign_key(F3DSSettings *s, int action, u32 key)
+{
+	switch (action) {
+	case 1: s->keyThrottle = key; break;
+	case 2: s->keyBrake = key; break;
+	case 3: s->keyHandbrake = key; break;
+	case 4: s->keyCamera = key; break;
+	default: break;
+	}
+}
+
 static void draw_pause_menu(const F3DSSettings *s, int selected, int saveStatus)
 {
 	consoleClear();
 	printf("\x1b[1;3HFORZA3DS  |  PAUSE\n");
 	printf("\x1b[3;3H%s  Reprendre\n", selected == 0 ? ">" : " ");
-	printf("\x1b[4;3H%s  Vue : %s\n", selected == 1 ? ">" : " ", "A pour changer");
+	printf("\x1b[4;3H%s  Vue : %s\n", selected == 1 ? ">" : " ", s->cameraMode == F3DS_CAM_CHASE ? "exterieure" : "cockpit");
 	printf("\x1b[5;3H%s  Distance camera : %.1f m\n", selected == 2 ? ">" : " ", s->chaseDistance);
 	printf("\x1b[6;3H%s  Hauteur camera : %.1f m\n", selected == 3 ? ">" : " ", s->chaseHeight);
 	printf("\x1b[7;3H%s  Vitesse recentrage : %.1f\n", selected == 4 ? ">" : " ", s->recenterSpeed);
@@ -94,9 +150,13 @@ static void draw_pause_menu(const F3DSSettings *s, int selected, int saveStatus)
 	printf("\x1b[9;3H%s  Zone morte : %.2f\n", selected == 6 ? ">" : " ", s->deadzone);
 	printf("\x1b[10;3H%s  Limiteur : %d FPS\n", selected == 7 ? ">" : " ", s->fpsLimit);
 	printf("\x1b[11;3H%s  HUD : %s\n", selected == 8 ? ">" : " ", s->hudVisible ? "visible" : "masque");
-	printf("\x1b[12;3H%s  Sauvegarder les reglages\n", selected == 9 ? ">" : " ");
-	printf("\x1b[14;3HA confirmer  B retour  START reprendre\n");
-	printf("\x1b[15;3HCroix directionnelle : naviguer/modifier\n");
+	printf("\x1b[12;3H%s  Accelerateur : %s\n", selected == 9 ? ">" : " ", key_name(s->keyThrottle));
+	printf("\x1b[13;3H%s  Frein : %s\n", selected == 10 ? ">" : " ", key_name(s->keyBrake));
+	printf("\x1b[14;3H%s  Frein a main : %s\n", selected == 11 ? ">" : " ", key_name(s->keyHandbrake));
+	printf("\x1b[15;3H%s  Changer de vue : %s\n", selected == 12 ? ">" : " ", key_name(s->keyCamera));
+	printf("\x1b[16;3H%s  Sauvegarder les reglages\n", selected == 13 ? ">" : " ");
+	printf("\x1b[18;3HA confirmer  B retour  START reprendre\n");
+	printf("\x1b[19;3HCroix directionnelle : naviguer/modifier\n");
 	if (saveStatus) printf("\x1b[17;3HReglages sauvegardes.");
 }
 
@@ -144,6 +204,10 @@ int main(int argc, char **argv)
 	input_config_defaults(&inputCfg);
 	inputCfg.steerSensitivity = settings.steerSensitivity;
 	inputCfg.deadzone = settings.deadzone;
+	inputCfg.keyThrottle = settings.keyThrottle;
+	inputCfg.keyBrake = settings.keyBrake;
+	inputCfg.keyHandbrake = settings.keyHandbrake;
+	inputCfg.keyCamera = settings.keyCamera;
 	F3DSInputState input;
 	memset(&input, 0, sizeof(input));
 
@@ -168,8 +232,11 @@ int main(int argc, char **argv)
 	cam.chaseDistance = settings.chaseDistance;
 	cam.chaseHeight = settings.chaseHeight;
 	cam.recenterSpeed = settings.recenterSpeed;
+	cam.orbitYaw = settings.orbitYaw;
+	cam.orbitPitch = settings.orbitPitch;
+	cam.mode = (F3DSCameraMode)settings.cameraMode;
 
-	int paused = 0, selected = 0, saveStatus = 0;
+	int paused = 0, selected = 0, saveStatus = 0, rebindAction = 0;
 	unsigned int frameCounter = 0;
 	while (aptMainLoop()) {
 		const int steps = core_loop_begin_frame(&loop);
@@ -180,19 +247,38 @@ int main(int argc, char **argv)
 		if (paused) loop.accumulator = 0.0f;
 		if (input.pausePressed) paused = !paused;
 		if (paused) {
+			if (rebindAction) {
+				const u32 candidate = input.keysDown & REBIND_KEY_MASK;
+				if (candidate) {
+					if (!key_is_used(&settings, rebindAction, candidate)) {
+						assign_key(&settings, rebindAction, candidate);
+						saveStatus = 0;
+					} else saveStatus = -1;
+					rebindAction = 0;
+				}
+			} else {
 			if (input.menuUp) selected = (selected + MENU_ITEMS - 1) % MENU_ITEMS;
 			if (input.menuDown) selected = (selected + 1) % MENU_ITEMS;
 			if (input.menuLeft) menu_adjust(&settings, selected, -1, &cam);
 			if (input.menuRight) menu_adjust(&settings, selected, 1, &cam);
 			if (input.menuConfirm) {
 				if (selected == 0) paused = 0;
-				else if (selected == 1) cam.mode = cam.mode == F3DS_CAM_CHASE ? F3DS_CAM_COCKPIT : F3DS_CAM_CHASE;
-				else if (selected == 9) saveStatus = settings_save(&settings);
+				else if (selected == 1) {
+					cam.mode = cam.mode == F3DS_CAM_CHASE ? F3DS_CAM_COCKPIT : F3DS_CAM_CHASE;
+					settings.cameraMode = cam.mode;
+				} else if (selected >= 9 && selected <= 12) rebindAction = selected - 8;
+				else if (selected == 13) saveStatus = settings_save(&settings);
 			}
 			if (input.menuBack) paused = 0;
+			}
 			inputCfg.steerSensitivity = settings.steerSensitivity;
 			inputCfg.deadzone = settings.deadzone;
+			inputCfg.keyThrottle = settings.keyThrottle;
+			inputCfg.keyBrake = settings.keyBrake;
+			inputCfg.keyHandbrake = settings.keyHandbrake;
+			inputCfg.keyCamera = settings.keyCamera;
 			draw_pause_menu(&settings, selected, saveStatus);
+			if (rebindAction) printf("\x1b[21;3HAppuie sur une touche pour l'assigner...");
 		} else {
 			for (int i = 0; i < steps; i++) {
 				physics_step(&def, &car, &input, &track, &terrain, loop.dt);
@@ -218,6 +304,13 @@ int main(int argc, char **argv)
 	settings.chaseDistance = cam.chaseDistance;
 	settings.chaseHeight = cam.chaseHeight;
 	settings.recenterSpeed = cam.recenterSpeed;
+	settings.orbitYaw = cam.orbitYaw;
+	settings.orbitPitch = cam.orbitPitch;
+	settings.cameraMode = cam.mode;
+	settings.keyThrottle = inputCfg.keyThrottle;
+	settings.keyBrake = inputCfg.keyBrake;
+	settings.keyHandbrake = inputCfg.keyHandbrake;
+	settings.keyCamera = inputCfg.keyCamera;
 	settings_save(&settings);
 	renderer_exit();
 	gfxExit();
