@@ -28,15 +28,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Citro3D
-        run: |
-          pacman -Sy --noconfirm
-          pacman -S --needed --noconfirm 3ds-citro3d
-
-      - name: Build 3DSX
+      - name: Verify devkitPro toolchain
         run: |
           test -n "$DEVKITPRO"
           test -n "$DEVKITARM"
+          command -v arm-none-eabi-gcc
+          command -v make
+
+      - name: Build and install Citro3D
+        run: |
+          git clone --depth 1 https://github.com/devkitPro/citro3d.git "$RUNNER_TEMP/citro3d"
+          make -C "$RUNNER_TEMP/citro3d" -j2
+          make -C "$RUNNER_TEMP/citro3d" install
+
+      - name: Build 3DSX
+        run: |
           make clean
           make -j2
 
