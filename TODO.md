@@ -154,6 +154,7 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Carte consultable à tout moment.
 - [ ] Caméra extérieure libre et caméra cockpit interchangeables, avec positions personnalisées globales sauvegardées ; voir les règles détaillées dans la section Première démo jouable.
 - [ ] Audio moteur prioritaire, vent et ambiance environnementale.
+- [ ] Adapter dynamiquement les ambiances sonores naturelles (vent, forêt, mer, oiseaux, etc.) au biome et à l'environnement traversés.
 - [ ] Faire évoluer le son du moteur de manière réaliste selon le régime moteur (RPM) et la charge.
 - [ ] Adapter le son du moteur à la vue cockpit avec une atténuation et un filtrage réalistes depuis l'habitacle.
 - [ ] Adapter les sons à la pluie et aux surfaces mouillées : roulement, projections d'eau et bruits d'adhérence des pneus.
