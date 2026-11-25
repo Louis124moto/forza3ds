@@ -4,13 +4,15 @@ Native 3D driving-game prototype for **New Nintendo 3DS / New Nintendo 3DS XL**,
 
 ## Current implementation state
 
-The code now contains an integrated **Mode Libre → vehicle → 3D garage/workshop → driving** path, but this iteration has not yet been compiled or validated on a physical New 3DS.
+The code now contains an integrated **Mode Libre → vehicle → 3D garage/workshop → driving** path. The current main-branch revision passes both the devkitARM/libctru/Citro3D 3DSX build and deterministic host tests; it still has not been validated on a physical New 3DS.
 
 Implemented in source:
 
 - Main menu with Mode Libre, Mode Progression information and exit.
+- Bottom-screen menu layout with RGB565-rendered panels, highlighted selection rows and a dark/cyan visual theme; labels remain rendered with libctru's font.
 - Mode Libre vehicle selection. The current in-game catalogue contains one prototype car; the menu does not claim that a larger catalogue exists.
-- A low-poly 3D inspection garage used by the vehicle and workshop screens.
+- A low-poly 3D inspection garage used by the vehicle and workshop screens, rendered on the top screen through Citro3D.
+- Citro3D owns top-screen presentation: no second manual `gfxSwapBuffers` is performed after `C3D_FrameEnd`, avoiding the extra swap that previously replaced the rendered scene with the clear-color frame.
 - Mechanical workshop pages for engine, turbo, intake, exhaust, camshaft, injectors, pistons, RPM, gearbox, differentials, suspension and tires.
 - Automatic/manual gearbox selection. In manual mode, L/R request down/up shifts.
 - Vehicle parameters are passed directly into the driving simulation: engine torque and boost, gear ratios/final drive, tire grip, differential settings, and suspension spring/damper/ride-height values.
@@ -39,12 +41,11 @@ Accelerator, brake, handbrake and camera-view buttons can be reassigned in the p
 
 ## Validation status and limitations
 
-**Do not treat this iteration as finished yet.** The source edits have been committed to the main branch, but no successful build or test run for the latest commits has been confirmed in this session. A successful compile would still not prove console playability.
+**Do not treat this iteration as finished yet.** The latest GitHub Actions run completed successfully for both the native 3DSX build and host tests. A successful compile does not prove that the graphics are displayed correctly on a physical console.
 
 Still required:
 
-- Compile the current source with devkitARM/libctru/Citro3D and fix any compiler/linker errors.
-- Run the deterministic host tests, including the new tuning and manual-gearbox tests.
+- Test the corrected top-screen presentation and bottom-screen menu graphics on a physical New 3DS.
 - Test the menu → car → workshop → driving → workshop loop on a physical New 3DS.
 - Measure frame time and confirm the 30 FPS target on real hardware.
 - Test NDSP audio stability, buffer lifetime and sound quality on the console.
