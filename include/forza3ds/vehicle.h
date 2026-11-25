@@ -1,3 +1,5 @@
+/* Forza3DS - vehicle: physical definition, visual reference and runtime state
+ * are three strictly separate groups (see docs/ARCHITECTURE.md). */
 #ifndef F3DS_VEHICLE_H
 #define F3DS_VEHICLE_H
 
@@ -40,6 +42,8 @@ typedef struct {
 	FVec3 pos;
 	float yaw;
 	float vx, vz;
+	float vy;          /* vertical velocity, m/s (ramps/jumps) */
+	bool airborne;
 	float yawRate;
 	float steerAngle;
 	int gear;

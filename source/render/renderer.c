@@ -31,20 +31,17 @@ void renderer_init(void)
 	s_target = C3D_RenderTargetCreate(240, 400, GPU_RB_RGBA8, GPU_RB_DEPTH24_STENCIL8);
 	C3D_RenderTargetSetOutput(s_target, GFX_TOP, GFX_LEFT, DISPLAY_TRANSFER_FLAGS);
 
-	/* Shader */
 	s_dvlb = DVLB_ParseFile((u32 *)vshader_shbin, vshader_shbin_size);
 	shaderProgramInit(&s_program);
 	shaderProgramSetVsh(&s_program, &s_dvlb->DVLE[0]);
 	C3D_BindProgram(&s_program);
 	uLoc_projection = shaderInstanceGetUniformLocation(s_program.vertexShader, "projection");
 
-	/* Attributes: v0 = position, v1 = color */
 	C3D_AttrInfo *attrInfo = C3D_GetAttrInfo();
 	AttrInfo_Init(attrInfo);
 	AttrInfo_AddLoader(attrInfo, 0, GPU_FLOAT, 3);
 	AttrInfo_AddLoader(attrInfo, 1, GPU_FLOAT, 4);
 
-	/* Fragment: pass vertex color through. */
 	C3D_TexEnv *env = C3D_GetTexEnv(0);
 	C3D_TexEnvInit(env);
 	C3D_TexEnvSrc(env, C3D_Both, GPU_PRIMARY_COLOR, 0, 0);
@@ -52,16 +49,15 @@ void renderer_init(void)
 
 	C3D_CullFace(GPU_CULL_NONE);
 
-	/* Projection: top screen 400x240. */
 	Mtx_PerspTilt(&s_projection, 62.0f * F3DS_PI / 180.0f, 400.0f / 240.0f, 0.15f, 600.0f, false);
 
 	memset(&s_meshes, 0, sizeof(s_meshes));
 }
 
-void renderer_set_track(const F3DSTrack *track)
+void renderer_set_track(const F3DSTrack *track, const F3DSTerrain *terrain)
 {
 	meshes_free(&s_meshes);
-	meshes_build(&s_meshes, track);
+	meshes_build(&s_meshes, track, terrain);
 
 	BufInfo_Init(&s_bufInfo);
 	BufInfo_Add(&s_bufInfo, s_meshes.data, sizeof(F3DSVertex), 2, 0x10);
@@ -84,7 +80,7 @@ static void set_car_matrix(const F3DSVehicleState *car, const C3D_Mtx *view)
 	C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &final);
 }
 
-void renderer_render(const F3DSCamera *cam, const F3DSVehicleState *car, const F3DSTrack *track)
+void renderer_render(const F3DSCamera *cam, const F3DSVehicleState *car)
 {
 	C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 	C3D_RenderTargetClear(s_target, C3D_CLEAR_ALL, CLEAR_COLOR, 0);
@@ -93,19 +89,16 @@ void renderer_render(const F3DSCamera *cam, const F3DSVehicleState *car, const F
 	C3D_Mtx view;
 	Mtx_LookAt(&view, to_c3d(cam->eye), to_c3d(cam->target), (C3D_FVec){{ 0.0f, 1.0f, 0.0f, 0.0f }}, false);
 
-	/* World (identity model) pass */
 	C3D_Mtx projView;
 	Mtx_Multiply(&projView, &s_projection, &view);
 	C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projView);
-
-	(void)track;
 
 	draw(&s_meshes, s_meshes.groundStart, s_meshes.groundCount);
 	draw(&s_meshes, s_meshes.roadStart, s_meshes.roadCount);
 	draw(&s_meshes, s_meshes.obstacleStart, s_meshes.obstacleCount);
 	draw(&s_meshes, s_meshes.decorStart, s_meshes.decorCount);
+	draw(&s_meshes, s_meshes.terrainStart, s_meshes.terrainCount);
 
-	/* Cockpit interior and car body follow the vehicle. */
 	set_car_matrix(car, &view);
 	draw(&s_meshes, s_meshes.cockpitStart, s_meshes.cockpitCount);
 	draw(&s_meshes, s_meshes.carStart, s_meshes.carCount);

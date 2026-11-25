@@ -29,26 +29,19 @@ static void push_quad(Builder *b, FVec3 p0, FVec3 p1, FVec3 p2, FVec3 p3, float 
 	push_tri(b, p0, p2, p3, r, g, bl);
 }
 
-/* Axis-aligned box from the min to the max corner. */
 static void push_box(Builder *b, float x0, float y0, float z0, float x1, float y1, float z1,
 		     float r, float g, float bl)
 {
 	const float shade = 0.8f;
-	/* top (+y) */
 	push_quad(b, fvec3(x0,y1,z0), fvec3(x1,y1,z0), fvec3(x1,y1,z1), fvec3(x0,y1,z1), r, g, bl);
-	/* bottom (-y) */
 	push_quad(b, fvec3(x0,y0,z0), fvec3(x0,y0,z1), fvec3(x1,y0,z1), fvec3(x1,y0,z0), r*shade, g*shade, bl*shade);
-	/* +z */
 	push_quad(b, fvec3(x0,y0,z1), fvec3(x1,y0,z1), fvec3(x1,y1,z1), fvec3(x0,y1,z1), r*shade, g*shade, bl*shade);
-	/* -z */
 	push_quad(b, fvec3(x1,y0,z0), fvec3(x0,y0,z0), fvec3(x0,y1,z0), fvec3(x1,y1,z0), r*shade, g*shade, bl*shade);
-	/* +x */
 	push_quad(b, fvec3(x1,y0,z1), fvec3(x1,y0,z0), fvec3(x1,y1,z0), fvec3(x1,y1,z1), r*shade, g*shade, bl*shade);
-	/* -x */
 	push_quad(b, fvec3(x0,y0,z0), fvec3(x0,y0,z1), fvec3(x0,y1,z1), fvec3(x0,y1,z0), r*shade, g*shade, bl*shade);
 }
 
-void meshes_build(F3DSMeshes *m, const F3DSTrack *track)
+void meshes_build(F3DSMeshes *m, const F3DSTrack *track, const F3DSTerrain *terrain)
 {
 	const uint32_t cap = MESH_MAX_VERTS;
 	Builder b;
@@ -62,7 +55,7 @@ void meshes_build(F3DSMeshes *m, const F3DSTrack *track)
 		  0.16f, 0.42f, 0.15f);
 	m->groundCount = b.n - m->groundStart;
 
-	/* --- Road: quads along the track centerline --- */
+	/* --- Road --- */
 	m->roadStart = b.n;
 	for (int i = 0; i < TRACK_POINTS; i++) {
 		const float w = TRACK_HALF_WIDTH;
@@ -73,7 +66,6 @@ void meshes_build(F3DSMeshes *m, const F3DSTrack *track)
 		const FVec3 p3 = fvec3_add(track->pts[i + 1], fvec3_scale(r, -w));
 		const float shade = (i & 1) ? 0.28f : 0.32f;
 		push_quad(&b, p0, p1, p2, p3, shade, shade, shade + 0.02f);
-		/* Edge stripes */
 		const float w2 = w - 0.4f;
 		const FVec3 e0 = fvec3_add(track->pts[i], fvec3_scale(r, -w2));
 		const FVec3 e1 = fvec3_add(track->pts[i], fvec3_scale(r, w2));
@@ -91,7 +83,7 @@ void meshes_build(F3DSMeshes *m, const F3DSTrack *track)
 	}
 	m->roadCount = b.n - m->roadStart;
 
-	/* --- Obstacles (crates and posts) --- */
+	/* --- Obstacles --- */
 	m->obstacleStart = b.n;
 	for (int i = 0; i < track->obstacleCount; i++) {
 		const FVec3 c = track->obstacles[i].center;
@@ -102,7 +94,7 @@ void meshes_build(F3DSMeshes *m, const F3DSTrack *track)
 	}
 	m->obstacleCount = b.n - m->obstacleStart;
 
-	/* --- Decor: red/white barrier wall at the circuit edge --- */
+	/* --- Decor barrier wall --- */
 	m->decorStart = b.n;
 	for (int i = 0; i < TRACK_POINTS; i += 3) {
 		const FVec3 r = track->right[i];
@@ -117,7 +109,47 @@ void meshes_build(F3DSMeshes *m, const F3DSTrack *track)
 	}
 	m->decorCount = b.n - m->decorStart;
 
-	/* --- Car: builtin prototype body + wheels (local space) --- */
+	/* --- Terrain features: ramps (stepped wedges) + gravel zones --- */
+	m->terrainStart = b.n;
+	for (int ri = 0; ri < terrain->rampCount; ri++) {
+		const F3DSTerrainRamp *r = &terrain->ramps[ri];
+		const int steps = 8;
+		for (int s = 0; s < steps; s++) {
+			const float u0 = r->length * (float)s / steps;
+			const float u1 = r->length * (float)(s + 1) / steps;
+			const float h0 = r->height * (float)s / steps;
+			const float h1 = r->height * (float)(s + 1) / steps;
+			const FVec3 c0 = fvec3_add(r->origin, fvec3_scale(r->fwd, u0));
+			const FVec3 c1 = fvec3_add(r->origin, fvec3_scale(r->fwd, u1));
+			const float half = r->width * 0.5f;
+			const FVec3 l0 = fvec3_add(c0, fvec3_scale(r->right, -half));
+			const FVec3 r0 = fvec3_add(c0, fvec3_scale(r->right, half));
+			const FVec3 l1 = fvec3_add(c1, fvec3_scale(r->right, -half));
+			const FVec3 r1 = fvec3_add(c1, fvec3_scale(r->right, half));
+			const float mix = (float)s / steps;
+			push_quad(&b,
+				  fvec3(l0.x, h0, l0.z), fvec3(r0.x, h0, r0.z),
+				  fvec3(r1.x, h1, r1.z), fvec3(l1.x, h1, l1.z),
+				  0.9f, 0.45f + 0.4f * mix, 0.1f);
+		}
+	}
+	for (int si = 0; si < terrain->slickCount; si++) {
+		/* Flat gravel disc, slightly above the road. */
+		const F3DSTerrainSlick *s = &terrain->slicks[si];
+		const int seg = 14;
+		for (int j = 0; j < seg; j++) {
+			const float a0 = (float)j / seg * 2.0f * F3DS_PI;
+			const float a1 = (float)(j + 1) / seg * 2.0f * F3DS_PI;
+			push_tri(&b,
+				 fvec3(s->x, 0.02f, s->z),
+				 fvec3(s->x + cosf(a0) * s->radius, 0.02f, s->z + sinf(a0) * s->radius),
+				 fvec3(s->x + cosf(a1) * s->radius, 0.02f, s->z + sinf(a1) * s->radius),
+				 0.45f, 0.36f, 0.26f);
+		}
+	}
+	m->terrainCount = b.n - m->terrainStart;
+
+	/* --- Car --- */
 	m->carStart = b.n;
 	push_box(&b, -0.9f, 0.30f, -2.1f, 0.9f, 1.00f, 2.1f, 0.85f, 0.15f, 0.15f);
 	push_box(&b, -0.7f, 1.00f, -1.2f, 0.7f, 1.55f, 0.6f, 0.12f, 0.12f, 0.16f);
@@ -127,7 +159,7 @@ void meshes_build(F3DSMeshes *m, const F3DSTrack *track)
 	push_box(&b, 0.75f, 0.0f, 1.05f, 1.05f, 0.62f, 1.65f, 0.08f, 0.08f, 0.08f);
 	m->carCount = b.n - m->carStart;
 
-	/* --- Cockpit interior: dashboard, steering wheel, seat --- */
+	/* --- Cockpit interior --- */
 	m->cockpitStart = b.n;
 	push_box(&b, -0.7f, 0.85f, 0.6f, 0.7f, 1.25f, 1.1f, 0.15f, 0.15f, 0.2f);
 	push_box(&b, -0.28f, 0.95f, 0.8f, 0.28f, 1.02f, 0.88f, 0.2f, 0.2f, 0.2f);

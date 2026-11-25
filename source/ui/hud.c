@@ -17,13 +17,14 @@ void hud_render(const F3DSVehicleState *car, const F3DSCamera *cam, const F3DSLo
 	if (rpmBar < 0) rpmBar = 0;
 	if (rpmBar > 20) rpmBar = 20;
 
-	printf("\x1b[1;3HForza3DS - prototype\n");
-	printf("\x1b[4;3HSpeed: %5.0f km/h   Gear: %s\n", kmh, gear_label(car->gear));
-	printf("\x1b[6;3HRPM: %5.0f\n", car->rpm);
-	printf("\x1b[7;3H[");
+	printf("\x1b[1;3HForza3DS - engine/physics test map\n");
+	printf("\x1b[3;3HSpeed: %5.0f km/h   Gear: %s %s\n", kmh, gear_label(car->gear), car->airborne ? "AIR" : "");
+	printf("\x1b[5;3HRPM: %5.0f\n", car->rpm);
+	printf("\x1b[6;3H[");
 	for (int i = 0; i < 20; i++)
 		putchar(i < rpmBar ? '#' : '.');
 	printf("]\n");
+	printf("\x1b[8;3HAltitude: %5.2f m   Y-Speed: %5.1f m/s\n", car->pos.y, car->vy);
 	printf("\x1b[10;3HCamera: %s  dist %.1f m  h %.1f m\n",
 	       cam->mode == F3DS_CAM_CHASE ? "chase " : "cockpit",
 	       cam->chaseDistance, cam->chaseHeight);

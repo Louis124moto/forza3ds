@@ -1,7 +1,7 @@
-/* Forza3DS - native New 3DS driving prototype.
- * New 3DS only: 804 MHz boost enabled at startup, 80% app CPU time for
- * multi-core scheduling. Implements roadmap stages 1-4 (base app, Citro3D
- * scene, camera, vehicle physics, demo track, collisions, HUD).
+/* Forza3DS - native New 3DS driving prototype (engine + physics test map).
+ * New 3DS only: 804 MHz speedup, 80% app CPU time for multi-core scheduling.
+ * Implements roadmap stages 1-4 with a dedicated physics test map:
+ * ramps with gravity/airborne dynamics and low-grip gravel zones.
  */
 #include <3ds.h>
 #include <stdio.h>
@@ -13,6 +13,7 @@
 #include "physics.h"
 #include "platform.h"
 #include "renderer.h"
+#include "terrain.h"
 #include "track.h"
 #include "vehicle.h"
 
@@ -25,7 +26,6 @@ int main(int argc, char **argv)
 	consoleInit(GFX_BOTTOM, NULL);
 	consoleClear();
 
-	/* New 3DS hardware bring-up; refuse to run on Old 3DS. */
 	F3DSPlatformInfo platform;
 	if (!platform_init(&platform)) {
 		printf("Forza3DS\n");
@@ -61,7 +61,9 @@ int main(int argc, char **argv)
 
 	F3DSTrack track;
 	track_init(&track);
-	renderer_set_track(&track);
+	F3DSTerrain terrain;
+	terrain_init(&terrain, &track);
+	renderer_set_track(&track, &terrain);
 
 	F3DSVehicleState car;
 	{
@@ -86,20 +88,17 @@ int main(int argc, char **argv)
 		if (input.exit)
 			break;
 
-		/* Fixed timestep simulation with catch-up cap. */
 		for (int i = 0; i < steps; i++) {
-			physics_step(&def, &car, &input, &track, loop.dt);
+			physics_step(&def, &car, &input, &track, &terrain, loop.dt);
 
-			/* One-shot camera actions must not repeat across steps. */
 			input.toggleView = 0;
 			input.camDistanceUp = input.camDistanceDown = 0;
 			input.camHeightUp = input.camHeightDown = 0;
 		}
 
-		/* Camera runs at frame rate, using the real frame time. */
 		camera_update(&cam, &car, &input, loop.frameTime);
 
-		renderer_render(&cam, &car, &track);
+		renderer_render(&cam, &car);
 		hud_render(&car, &cam, &loop);
 
 		gfxFlushBuffers();
