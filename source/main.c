@@ -20,6 +20,7 @@
 #define SETTINGS_PATH "sdmc:/3ds/forza3ds/settings.bin"
 #define SETTINGS_MAGIC 0x46334453u
 #define SETTINGS_VERSION 2u
+#define REBIND_KEY_MASK (KEY_A | KEY_B | KEY_X | KEY_Y | KEY_L | KEY_R | KEY_ZL | KEY_ZR)
 
 typedef struct {
 	u32 magic, version;
@@ -71,14 +72,16 @@ static void settings_load(F3DSSettings *s)
 		v.recenterSpeed < 0.2f || v.recenterSpeed > 8.0f ||
 		(v.fpsLimit != 30 && v.fpsLimit != 60) ||
 		(v.hudVisible != 0 && v.hudVisible != 1) ||
-		(v.cameraMode != F3DS_CAM_CHASE && v.cameraMode != F3DS_CAM_COCKPIT))
-		return;
-	*s = v;
-}
-
-static int settings_save(const F3DSSettings *s)
-{
-	mkdir("sdmc:/3ds", 0777); mkdir("sdmc:/3ds/forza3ds", 0777);
+		(v.cameraMode != F3DS_CAM_CHASE && v.cameraMode != F3DS_CAM_COCKPIT) ||
+		!(v.keyThrottle & REBIND_KEY_MASK) || !(v.keyBrake & REBIND_KEY_MASK) ||
+		!(v.keyHandbrake & REBIND_KEY_MASK) || !(v.keyCamera & REBIND_KEY_MASK) ||
+		(v.keyThrottle & ~REBIND_KEY_MASK) || (v.keyBrake & ~REBIND_KEY_MASK) ||
+		(v.keyHandbrake & ~REBIND_KEY_MASK) || (v.keyCamera & ~REBIND_KEY_MASK) ||
+		(v.keyThrottle & (v.keyThrottle - 1u)) || (v.keyBrake & (v.keyBrake - 1u)) ||
+		(v.keyHandbrake & (v.keyHandbrake - 1u)) || (v.keyCamera & (v.keyCamera - 1u)) ||
+		v.keyThrottle == v.keyBrake || v.keyThrottle == v.keyHandbrake ||
+		v.keyThrottle == v.keyCamera || v.keyBrake == v.keyHandbrake ||
+		v.keyBrake == v.keyCamera || v.keyHandbrake == v.keyCamera)", 0777); mkdir("sdmc:/3ds/forza3ds", 0777);
 	FILE *f = fopen(SETTINGS_PATH, "wb");
 	if (!f) return 0;
 	const int ok = fwrite(s, sizeof(*s), 1, f) == 1;
@@ -145,7 +148,7 @@ static void draw_workshop_home(int selected, const F3DSVehicleDef *d)
 static int workshop_count(F3DSWorkshopPage page)
 {
 	switch (page) {
-	case WORKSHOP_ENGINE: return 9;
+	case WORKSHOP_ENGINE: return 10;
 	case WORKSHOP_GEARBOX: return 9;
 	case WORKSHOP_DIFF: return 5;
 	case WORKSHOP_SUSPENSION: return 5;
@@ -167,6 +170,7 @@ static void workshop_adjust(F3DSVehicleDef *d, F3DSWorkshopPage page, int item, 
 		case 5: d->exhaustLevel = (d->exhaustLevel + dir < 0) ? 0 : d->exhaustLevel + dir; break;
 		case 6: d->camshaftLevel = (d->camshaftLevel + dir < 0) ? 0 : d->camshaftLevel + dir; break;
 		case 7: d->injectorLevel = (d->injectorLevel + dir < 0) ? 0 : d->injectorLevel + dir; break;
+		case 8: d->pistonLevel = (d->pistonLevel + dir < 0) ? 0 : d->pistonLevel + dir; break;
 		default: break;
 		}
 		break;
@@ -212,7 +216,8 @@ static void draw_workshop_page(F3DSWorkshopPage page, int selected, const F3DSVe
 		printf("\x1b[11;4H%s Echappement niveau : %d", selected == 5 ? ">" : " ", d->exhaustLevel);
 		printf("\x1b[12;4H%s Arbre a cames : %d", selected == 6 ? ">" : " ", d->camshaftLevel);
 		printf("\x1b[13;4H%s Injecteurs : %d", selected == 7 ? ">" : " ", d->injectorLevel);
-		printf("\x1b[15;4H%s Retour", selected == 8 ? ">" : " ");
+		printf("\x1b[14;4H%s Pistons : %d", selected == 8 ? ">" : " ", d->pistonLevel);
+		printf("\x1b[16;4H%s Retour", selected == 9 ? ">" : " ");
 	} else if (page == WORKSHOP_GEARBOX) {
 		printf("\x1b[4;4HBoite de vitesses");
 		printf("\x1b[6;4H%s Nombre de rapports : %d", selected == 0 ? ">" : " ", d->gearCount);
@@ -243,20 +248,53 @@ static void draw_workshop_page(F3DSWorkshopPage page, int selected, const F3DSVe
 	printf("\x1b[21;4HGauche/Droite : modifier  A/B : retour");
 }
 
+static const char *key_name(u32 key)
+{
+	switch (key) {
+	case KEY_A: return "A"; case KEY_B: return "B"; case KEY_X: return "X"; case KEY_Y: return "Y";
+	case KEY_L: return "L"; case KEY_R: return "R"; case KEY_ZL: return "ZL"; case KEY_ZR: return "ZR";
+	default: return "?";
+	}
+}
+
+static int key_is_used(const F3DSSettings *s, int action, u32 key)
+{
+	if (action != 1 && s->keyThrottle == key) return 1;
+	if (action != 2 && s->keyBrake == key) return 1;
+	if (action != 3 && s->keyHandbrake == key) return 1;
+	if (action != 4 && s->keyCamera == key) return 1;
+	return 0;
+}
+
+static void assign_key(F3DSSettings *s, int action, u32 key)
+{
+	switch (action) {
+	case 1: s->keyThrottle = key; break; case 2: s->keyBrake = key; break;
+	case 3: s->keyHandbrake = key; break; case 4: s->keyCamera = key; break;
+	default: break;
+	}
+}
+
 static void draw_pause_menu(int selected, const F3DSSettings *s)
 {
 	menu_title("PAUSE");
-	printf("\x1b[5;5H%s Reprendre", selected == 0 ? ">" : " ");
-	printf("\x1b[6;5H%s Retour a l'atelier", selected == 1 ? ">" : " ");
-	printf("\x1b[7;5H%s Choix du vehicule", selected == 2 ? ">" : " ");
-	printf("\x1b[8;5H%s Menu principal", selected == 3 ? ">" : " ");
-	printf("\x1b[10;5H%s Vue : %s", selected == 4 ? ">" : " ", s->cameraMode == F3DS_CAM_CHASE ? "exterieure" : "cockpit");
-	printf("\x1b[11;5H%s Distance camera : %.1f", selected == 5 ? ">" : " ", s->chaseDistance);
-	printf("\x1b[12;5H%s Hauteur camera : %.1f", selected == 6 ? ">" : " ", s->chaseHeight);
-	printf("\x1b[13;5H%s Recentrage : %.1f", selected == 7 ? ">" : " ", s->recenterSpeed);
-	printf("\x1b[14;5H%s Sensibilite : %.1f", selected == 8 ? ">" : " ", s->steerSensitivity);
-	printf("\x1b[15;5H%s Zone morte : %.2f", selected == 9 ? ">" : " ", s->deadzone);
-	printf("\x1b[16;5H%s Sauver reglages", selected == 10 ? ">" : " ");
+	printf("\x1b[4;5H%s Reprendre", selected == 0 ? ">" : " ");
+	printf("\x1b[5;5H%s Retour a l'atelier", selected == 1 ? ">" : " ");
+	printf("\x1b[6;5H%s Choix du vehicule", selected == 2 ? ">" : " ");
+	printf("\x1b[7;5H%s Menu principal", selected == 3 ? ">" : " ");
+	printf("\x1b[8;5H%s Vue : %s", selected == 4 ? ">" : " ", s->cameraMode == F3DS_CAM_CHASE ? "exterieure" : "cockpit");
+	printf("\x1b[9;5H%s Distance camera : %.1f", selected == 5 ? ">" : " ", s->chaseDistance);
+	printf("\x1b[10;5H%s Hauteur camera : %.1f", selected == 6 ? ">" : " ", s->chaseHeight);
+	printf("\x1b[11;5H%s Recentrage : %.1f", selected == 7 ? ">" : " ", s->recenterSpeed);
+	printf("\x1b[12;5H%s Sensibilite : %.1f", selected == 8 ? ">" : " ", s->steerSensitivity);
+	printf("\x1b[13;5H%s Zone morte : %.2f", selected == 9 ? ">" : " ", s->deadzone);
+	printf("\x1b[14;5H%s Limiteur : %d FPS", selected == 10 ? ">" : " ", s->fpsLimit);
+	printf("\x1b[15;5H%s HUD : %s", selected == 11 ? ">" : " ", s->hudVisible ? "visible" : "masque");
+	printf("\x1b[16;5H%s Accelerateur : %s", selected == 12 ? ">" : " ", key_name(s->keyThrottle));
+	printf("\x1b[17;5H%s Frein : %s", selected == 13 ? ">" : " ", key_name(s->keyBrake));
+	printf("\x1b[18;5H%s Frein a main : %s", selected == 14 ? ">" : " ", key_name(s->keyHandbrake));
+	printf("\x1b[19;5H%s Changer de vue : %s", selected == 15 ? ">" : " ", key_name(s->keyCamera));
+	printf("\x1b[20;5H%s Sauver reglages", selected == 16 ? ">" : " ");
 }
 
 static void pause_adjust(F3DSSettings *s, F3DSCamera *cam, int item, int dir)
@@ -267,6 +305,8 @@ static void pause_adjust(F3DSSettings *s, F3DSCamera *cam, int item, int dir)
 	case 7: s->recenterSpeed = clampf(s->recenterSpeed + dir * 0.2f, 0.2f, 8.0f); cam->recenterSpeed = s->recenterSpeed; break;
 	case 8: s->steerSensitivity = clampf(s->steerSensitivity + dir * 0.1f, 0.1f, 3.0f); break;
 	case 9: s->deadzone = clampf(s->deadzone + dir * 0.02f, 0.0f, 0.5f); break;
+	case 10: s->fpsLimit = s->fpsLimit == 30 ? 60 : 30; break;
+	case 11: s->hudVisible = !s->hudVisible; break;
 	default: break;
 	}
 }
@@ -312,7 +352,7 @@ int main(int argc, char **argv)
 	(void)engine_audio_init();
 	F3DSScreen screen = SCREEN_MAIN;
 	F3DSWorkshopPage workshopPage = WORKSHOP_HOME;
-	int mainSelected = 0, carSelected = 0, workshopSelected = 0, pauseSelected = 0;
+	int mainSelected = 0, carSelected = 0, workshopSelected = 0, pauseSelected = 0, rebindAction = 0;
 	unsigned int frameCounter = 0;
 	while (aptMainLoop()) {
 		int steps = core_loop_begin_frame(&loop);
@@ -377,22 +417,36 @@ int main(int argc, char **argv)
 			}
 		} else if (screen == SCREEN_PAUSE) {
 			engine_audio_set_enabled(false);
-			if (input.menuUp) pauseSelected = (pauseSelected + 10) % 11;
-			if (input.menuDown) pauseSelected = (pauseSelected + 1) % 11;
-			if (input.menuLeft) pause_adjust(&settings, &cam, pauseSelected, -1);
-			if (input.menuRight) pause_adjust(&settings, &cam, pauseSelected, 1);
-			if (input.menuConfirm) {
-				if (pauseSelected == 0) { screen = SCREEN_DRIVE; loop.accumulator = 0.0f; }
-				else if (pauseSelected == 1) { screen = SCREEN_WORKSHOP; workshopPage = WORKSHOP_HOME; workshopSelected = 0; }
-				else if (pauseSelected == 2) { screen = SCREEN_CAR; carSelected = 0; }
-				else if (pauseSelected == 3) screen = SCREEN_MAIN;
-				else if (pauseSelected == 4) {
-					cam.mode = cam.mode == F3DS_CAM_CHASE ? F3DS_CAM_COCKPIT : F3DS_CAM_CHASE;
-					settings.cameraMode = cam.mode;
-				} else if (pauseSelected == 10) settings_save(&settings);
+			if (rebindAction) {
+				const u32 candidate = input.keysDown & REBIND_KEY_MASK;
+				if (candidate && !(candidate & (candidate - 1u))) {
+					if (!key_is_used(&settings, rebindAction, candidate))
+						assign_key(&settings, rebindAction, candidate);
+					rebindAction = 0;
+				} else if (input.menuBack) rebindAction = 0;
+			} else {
+				if (input.menuUp) pauseSelected = (pauseSelected + 16) % 17;
+				if (input.menuDown) pauseSelected = (pauseSelected + 1) % 17;
+				if (input.menuLeft) pause_adjust(&settings, &cam, pauseSelected, -1);
+				if (input.menuRight) pause_adjust(&settings, &cam, pauseSelected, 1);
+				if (input.menuConfirm) {
+					if (pauseSelected == 0) { screen = SCREEN_DRIVE; loop.accumulator = 0.0f; }
+					else if (pauseSelected == 1) { screen = SCREEN_WORKSHOP; workshopPage = WORKSHOP_HOME; workshopSelected = 0; }
+					else if (pauseSelected == 2) { screen = SCREEN_CAR; carSelected = 0; }
+					else if (pauseSelected == 3) screen = SCREEN_MAIN;
+					else if (pauseSelected == 4) {
+						cam.mode = cam.mode == F3DS_CAM_CHASE ? F3DS_CAM_COCKPIT : F3DS_CAM_CHASE;
+						settings.cameraMode = cam.mode;
+					} else if (pauseSelected >= 12 && pauseSelected <= 15) rebindAction = pauseSelected - 11;
+					else if (pauseSelected == 16) settings_save(&settings);
+				}
+				if (input.menuBack || input.pausePressed) { screen = SCREEN_DRIVE; loop.accumulator = 0.0f; }
 			}
-			if (input.menuBack || input.pausePressed) { screen = SCREEN_DRIVE; loop.accumulator = 0.0f; }
+			inputCfg.steerSensitivity = settings.steerSensitivity; inputCfg.deadzone = settings.deadzone;
+			inputCfg.keyThrottle = settings.keyThrottle; inputCfg.keyBrake = settings.keyBrake;
+			inputCfg.keyHandbrake = settings.keyHandbrake; inputCfg.keyCamera = settings.keyCamera;
 			draw_pause_menu(pauseSelected, &settings);
+			if (rebindAction) printf("\x1b[22;5HAppuie sur une touche pour l'assigner (B annule).");
 		} else if (screen == SCREEN_DRIVE) {
 			engine_audio_set_enabled(true);
 			if (input.pausePressed) {
