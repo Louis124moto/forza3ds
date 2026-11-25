@@ -145,6 +145,7 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Séparer données visuelles, physiques et mécaniques.
 - [ ] Permettre peintures, roues et modifications visuelles.
 - [ ] Prévoir améliorations moteur, transmission, pneus et suspension.
+- [ ] Permettre le réglage et la préparation détaillée des moteurs : régime maximal, pression de suralimentation du turbo et autres paramètres, avec des effets cohérents sur les performances, la fiabilité simulée et le son.
 - [ ] Ajouter découverte et restauration automatique des véhicules abandonnés.
 - [ ] Gérer réparations et pièces récupérées/achetées.
 - [ ] Ne pas implémenter d'usure générale permanente.
@@ -157,6 +158,7 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Adapter dynamiquement les ambiances sonores naturelles (vent, forêt, mer, oiseaux, etc.) au biome et à l'environnement traversés.
 - [ ] Faire varier dynamiquement le volume des sons environnementaux, notamment le vent, en fonction de la vitesse du véhicule.
 - [ ] Faire évoluer le son du moteur de manière réaliste selon le régime moteur (RPM) et la charge.
+- [ ] Donner à chaque moteur une signature sonore propre selon ses caractéristiques (cylindrée, nombre de cylindres, aspiration et autres paramètres).
 - [ ] Adapter le son du moteur à la vue cockpit avec une atténuation et un filtrage réalistes depuis l'habitacle.
 - [ ] Adapter les sons à la pluie et aux surfaces mouillées : roulement, projections d'eau et bruits d'adhérence des pneus.
 - [ ] Produire des sons de roulement et d'adhérence distincts et réalistes selon le matériau de surface (asphalte, gravier, terre, herbe).
