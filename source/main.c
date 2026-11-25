@@ -81,7 +81,15 @@ static void settings_load(F3DSSettings *s)
 		(v.keyHandbrake & (v.keyHandbrake - 1u)) || (v.keyCamera & (v.keyCamera - 1u)) ||
 		v.keyThrottle == v.keyBrake || v.keyThrottle == v.keyHandbrake ||
 		v.keyThrottle == v.keyCamera || v.keyBrake == v.keyHandbrake ||
-		v.keyBrake == v.keyCamera || v.keyHandbrake == v.keyCamera)", 0777); mkdir("sdmc:/3ds/forza3ds", 0777);
+		v.keyBrake == v.keyCamera || v.keyHandbrake == v.keyCamera)
+		return;
+	*s = v;
+}
+
+static int settings_save(const F3DSSettings *s)
+{
+	mkdir("sdmc:/3ds", 0777);
+	mkdir("sdmc:/3ds/forza3ds", 0777);
 	FILE *f = fopen(SETTINGS_PATH, "wb");
 	if (!f) return 0;
 	const int ok = fwrite(s, sizeof(*s), 1, f) == 1;
