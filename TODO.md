@@ -161,6 +161,7 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Menu de réglages graphiques : qualité des textures, ombres et distance d'affichage.
 - [ ] Limiteur FPS configurable et compteur FPS temps réel activable/masquable ; aucun panneau de statistiques CPU/GPU/mémoire, benchmark intégré ou détection automatique des réglages.
 - [ ] Mettre en pause la simulation physique lorsque le joueur met le jeu en pause.
+- [ ] Couper automatiquement le son du jeu pendant la pause et restaurer le volume précédent à la reprise.
 - [ ] Mettre automatiquement le jeu en pause lorsque le clapet de la New 3DS est fermé ; à la réouverture, rester en pause jusqu'à une action explicite du joueur pour reprendre.
 - [ ] Régénérer les données immuables depuis la graine ; stocker explicitement tout état non dérivable.
 
