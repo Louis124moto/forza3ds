@@ -225,6 +225,27 @@ void meshes_build(F3DSMeshes *m, const F3DSTrack *track, const F3DSTerrain *terr
 	push_box(&b, -0.45f, 0.2f, -0.9f, 0.45f, 0.9f, -0.4f, 0.25f, 0.05f, 0.05f);
 	m->cockpitCount = b.n - m->cockpitStart;
 
+	/* --- Compact inspection garage used by the main menu and workshop. --- */
+	m->garageStart = b.n;
+	const float gx = track->pts[0].x;
+	const float gz = track->pts[0].z;
+	push_quad(&b, fvec3(gx - 12.0f, -0.03f, gz - 12.0f),
+		fvec3(gx - 12.0f, -0.03f, gz + 12.0f),
+		fvec3(gx + 12.0f, -0.03f, gz + 12.0f),
+		fvec3(gx + 12.0f, -0.03f, gz - 12.0f), 0.28f, 0.30f, 0.33f);
+	/* Side walls and rear wall; the front remains open for vehicle access. */
+	push_box(&b, gx - 12.0f, 0.0f, gz - 12.0f, gx - 11.4f, 7.0f, gz + 12.0f, 0.20f, 0.23f, 0.28f);
+	push_box(&b, gx + 11.4f, 0.0f, gz - 12.0f, gx + 12.0f, 7.0f, gz + 12.0f, 0.20f, 0.23f, 0.28f);
+	push_box(&b, gx - 12.0f, 0.0f, gz - 12.0f, gx + 12.0f, 7.0f, gz - 11.4f, 0.24f, 0.27f, 0.31f);
+	push_box(&b, gx - 12.0f, 6.7f, gz - 12.0f, gx + 12.0f, 7.2f, gz + 12.0f, 0.15f, 0.17f, 0.20f);
+	/* Front pillars, inspection lights and a colored workshop strip. */
+	push_box(&b, gx - 11.5f, 0.0f, gz + 10.8f, gx - 10.8f, 6.7f, gz + 11.5f, 0.32f, 0.34f, 0.38f);
+	push_box(&b, gx + 10.8f, 0.0f, gz + 10.8f, gx + 11.5f, 6.7f, gz + 11.5f, 0.32f, 0.34f, 0.38f);
+	push_box(&b, gx - 8.0f, 6.25f, gz - 4.0f, gx + 8.0f, 6.38f, gz - 3.5f, 0.92f, 0.90f, 0.72f);
+	push_box(&b, gx - 8.0f, 6.25f, gz + 4.0f, gx + 8.0f, 6.38f, gz + 4.5f, 0.92f, 0.90f, 0.72f);
+	push_box(&b, gx - 11.35f, 0.05f, gz + 9.9f, gx + 11.35f, 0.18f, gz + 10.15f, 0.78f, 0.18f, 0.10f);
+	m->garageCount = b.n - m->garageStart;
+
 	m->total = b.n;
 	m->data = b.v;
 }
