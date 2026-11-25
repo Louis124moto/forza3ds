@@ -145,7 +145,7 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Séparer données visuelles, physiques et mécaniques.
 - [ ] Permettre peintures, roues et modifications visuelles.
 - [ ] Prévoir améliorations moteur, transmission, pneus et suspension.
-- [ ] Permettre le réglage et la préparation détaillée des moteurs : régime maximal, pression de suralimentation du turbo et autres paramètres, avec des effets cohérents sur les performances, la fiabilité simulée et le son.
+- [ ] Permettre le réglage et la préparation détaillée des moteurs : régime maximal, pression de suralimentation du turbo et autres paramètres, avec des effets cohérents sur les performances et le son.
 - [ ] Ajouter découverte et restauration automatique des véhicules abandonnés.
 - [ ] Gérer réparations et pièces récupérées/achetées.
 - [ ] Ne pas implémenter d'usure générale permanente.
