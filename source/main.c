@@ -405,6 +405,10 @@ int main(int argc, char **argv)
 			printf("\x1b[16;5HB pour revenir au menu.");
 			if (input.menuBack || input.menuConfirm) screen = SCREEN_MAIN;
 		} else if (screen == SCREEN_CAR) {
+			F3DSInputState cameraInput = input;
+			cameraInput.camDistanceUp = cameraInput.camDistanceDown = 0;
+			cameraInput.camHeightUp = cameraInput.camHeightDown = 0;
+			camera_update(&cam, &car, &cameraInput, loop.frameTime);
 			engine_audio_set_enabled(true);
 			car.rpm = fmaxf(car.rpm, def.idleRpm);
 			car.engineLoad = 0.0f;
@@ -415,6 +419,10 @@ int main(int argc, char **argv)
 			} else if ((input.menuConfirm && carSelected == 1) || input.menuBack) screen = SCREEN_MAIN;
 			draw_car_select(carSelected);
 		} else if (screen == SCREEN_WORKSHOP) {
+			F3DSInputState cameraInput = input;
+			cameraInput.camDistanceUp = cameraInput.camDistanceDown = 0;
+			cameraInput.camHeightUp = cameraInput.camHeightDown = 0;
+			camera_update(&cam, &car, &cameraInput, loop.frameTime);
 			engine_audio_set_enabled(true);
 			car.engineLoad = 0.08f;
 			car.rpm = fmaxf(car.rpm, def.idleRpm);
