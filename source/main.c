@@ -1,3 +1,8 @@
+/* Forza3DS - native New 3DS driving prototype.
+ * New 3DS only: 804 MHz boost enabled at startup, 80% app CPU time for
+ * multi-core scheduling. Implements roadmap stages 1-4 (base app, Citro3D
+ * scene, camera, vehicle physics, demo track, collisions, HUD).
+ */
 #include <3ds.h>
 #include <stdio.h>
 
@@ -6,6 +11,7 @@
 #include "hud.h"
 #include "input.h"
 #include "physics.h"
+#include "platform.h"
 #include "renderer.h"
 #include "track.h"
 #include "vehicle.h"
@@ -18,6 +24,24 @@ int main(int argc, char **argv)
 	gfxInitDefault();
 	consoleInit(GFX_BOTTOM, NULL);
 	consoleClear();
+
+	/* New 3DS hardware bring-up; refuse to run on Old 3DS. */
+	F3DSPlatformInfo platform;
+	if (!platform_init(&platform)) {
+		printf("Forza3DS\n");
+		printf("This game requires a New Nintendo 3DS.\n");
+		printf("Press START to exit.\n");
+		while (aptMainLoop()) {
+			hidScanInput();
+			if (hidKeysDown() & KEY_START)
+				break;
+			gfxFlushBuffers();
+			gfxSwapBuffers();
+			gspWaitForVBlank();
+		}
+		gfxExit();
+		return 0;
+	}
 
 	renderer_init();
 
