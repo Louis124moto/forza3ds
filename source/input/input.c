@@ -29,8 +29,10 @@ void input_poll(F3DSInputState *in, const F3DSInputConfig *cfg)
 	in->throttle = (held & cfg->keyThrottle) ? 1.0f : 0.0f;
 	in->brake = (held & cfg->keyBrake) ? 1.0f : 0.0f;
 	in->handbrake = (held & cfg->keyHandbrake) ? 1 : 0;
-	in->gearUp = (down & KEY_R) ? 1 : 0;
-	in->gearDown = (down & KEY_L) ? 1 : 0;
+	in->gearUp = ((down & KEY_R) && cfg->keyThrottle != KEY_R && cfg->keyBrake != KEY_R &&
+		cfg->keyHandbrake != KEY_R && cfg->keyCamera != KEY_R) ? 1 : 0;
+	in->gearDown = ((down & KEY_L) && cfg->keyThrottle != KEY_L && cfg->keyBrake != KEY_L &&
+		cfg->keyHandbrake != KEY_L && cfg->keyCamera != KEY_L) ? 1 : 0;
 
 	circlePosition cp;
 	hidCircleRead(&cp);
