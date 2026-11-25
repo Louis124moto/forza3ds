@@ -3,7 +3,7 @@
 #include <string.h>
 #include "vshader_shbin.h"
 
-#define CLEAR_COLOR 0x6FC3E8FF
+#define CLEAR_COLOR 0x101923FF
 
 #define DISPLAY_TRANSFER_FLAGS \
 	(GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) | \
@@ -67,6 +67,10 @@ void renderer_set_track(const F3DSTrack *track, const F3DSTerrain *terrain)
 	if (!s_meshes.data || s_meshes.total == 0)
 		return;
 
+	/* The PICA200 reads the linear VBO directly. Flush CPU writes before
+	 * binding it so the GPU cannot see stale vertex data. */
+	GSPGPU_FlushDataCache(s_meshes.data, s_meshes.total * sizeof(F3DSVertex));
+
 	C3D_BufInfo *bufInfo = C3D_GetBufInfo();
 	BufInfo_Init(bufInfo);
 	BufInfo_Add(bufInfo, s_meshes.data, sizeof(F3DSVertex), 2, 0x10);
@@ -91,8 +95,12 @@ static void set_car_matrix(const F3DSVehicleState *car, const C3D_Mtx *view)
 
 void renderer_render(const F3DSCamera *cam, const F3DSVehicleState *car)
 {
-	C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+	/* GX_MemoryFill used by RenderTargetClear is queued separately from the
+	 * Citro3D draw list. Clear before FrameBegin(SYNCDRAW), so the frame sync
+	 * completes the clear before any triangles can touch the same buffers. */
 	C3D_RenderTargetClear(s_target, C3D_CLEAR_ALL, CLEAR_COLOR, 0);
+	if (!C3D_FrameBegin(C3D_FRAME_SYNCDRAW))
+		return;
 	C3D_FrameDrawOn(s_target);
 
 	if (!s_meshes.data || s_meshes.total == 0) {
@@ -101,7 +109,8 @@ void renderer_render(const F3DSCamera *cam, const F3DSVehicleState *car)
 	}
 
 	C3D_Mtx view;
-	Mtx_LookAt(&view, to_c3d(cam->eye), to_c3d(cam->target), (C3D_FVec){{ 0.0f, 1.0f, 0.0f, 0.0f }}, false);
+	Mtx_LookAt(&view, to_c3d(cam->eye), to_c3d(cam->target),
+		(C3D_FVec){{ 0.0f, 1.0f, 0.0f, 0.0f }}, false);
 
 	C3D_Mtx projView;
 	Mtx_Multiply(&projView, &s_projection, &view);
