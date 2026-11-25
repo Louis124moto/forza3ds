@@ -38,6 +38,7 @@ void vehicle_def_default(F3DSVehicleDef *d)
 	d->exhaustLevel = 0;
 	d->camshaftLevel = 0;
 	d->injectorLevel = 0;
+	d->pistonLevel = 0;
 	d->cylinders = 4;
 	d->displacementLitres = 2.0f;
 	d->shiftUpRpm = 6500.0f;
@@ -61,7 +62,7 @@ float vehicle_engine_torque(const F3DSVehicleDef *d, float rpm)
 	const float fall = clampf((rpm - d->torqueFallRpm) / span, 0.0f, 1.0f);
 	const float turbo = d->turboInstalled ? 1.0f + fmaxf(d->turboBoostBar, 0.0f) * 0.115f : 1.0f;
 	const float breathing = 1.0f + d->intakeLevel * 0.035f + d->exhaustLevel * 0.045f
-		+ d->camshaftLevel * 0.065f + d->injectorLevel * 0.025f;
+		+ d->camshaftLevel * 0.065f + d->injectorLevel * 0.025f + d->pistonLevel * 0.04f;
 	const float curve = 1.0f - 0.38f * fall;
 	return d->torqueBase * turbo * breathing * curve;
 }
@@ -75,6 +76,6 @@ float vehicle_sound_pitch(const F3DSVehicleDef *d, float rpm)
 
 float vehicle_sound_timbre(const F3DSVehicleDef *d)
 {
-	return clampf(0.18f + d->exhaustLevel * 0.12f + d->intakeLevel * 0.07f
+	return clampf(0.18f + d->exhaustLevel * 0.12f + d->intakeLevel * 0.07f + d->pistonLevel * 0.035f
 		+ (d->turboInstalled ? 0.16f : 0.0f), 0.05f, 1.0f);
 }
