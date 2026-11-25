@@ -32,17 +32,20 @@ jobs:
         run: |
           test -n "$DEVKITPRO"
           test -n "$DEVKITARM"
+          export PATH="$DEVKITARM/bin:$PATH"
           command -v arm-none-eabi-gcc
           command -v make
 
       - name: Build and install Citro3D
         run: |
+          export PATH="$DEVKITARM/bin:$PATH"
           git clone --depth 1 https://github.com/devkitPro/citro3d.git "$RUNNER_TEMP/citro3d"
           make -C "$RUNNER_TEMP/citro3d" -j2
           make -C "$RUNNER_TEMP/citro3d" install
 
       - name: Build 3DSX
         run: |
+          export PATH="$DEVKITARM/bin:$PATH"
           make clean
           make -j2
 
