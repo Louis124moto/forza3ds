@@ -524,7 +524,7 @@ int main(int argc, char **argv)
 			renderer_set_garage(true);
 		else renderer_set_garage(false);
 		if (screen != SCREEN_DRIVE) renderer_render(&cam, &car);
-		gfxFlushBuffers(); gfxSwapBuffers(); gspWaitForVBlank();
+		gfxFlushBuffers();
 	}
 
 	settings.steerSensitivity = inputCfg.steerSensitivity;
