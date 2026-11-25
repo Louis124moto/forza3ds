@@ -157,7 +157,9 @@ static void draw_pause_menu(const F3DSSettings *s, int selected, int saveStatus)
 	printf("\x1b[16;3H%s  Sauvegarder les reglages\n", selected == 13 ? ">" : " ");
 	printf("\x1b[18;3HA confirmer  B retour  START reprendre\n");
 	printf("\x1b[19;3HCroix directionnelle : naviguer/modifier\n");
-	if (saveStatus) printf("\x1b[17;3HReglages sauvegardes.");
+	if (saveStatus > 0) printf("\x1b[17;3HReglages sauvegardes.");
+	else if (saveStatus == -1) printf("\x1b[17;3HTouche deja attribuee.");
+	else if (saveStatus == -2) printf("\x1b[17;3HEchec de sauvegarde.");
 }
 
 static void menu_adjust(F3DSSettings *s, int selected, int direction, F3DSCamera *cam)
@@ -249,7 +251,7 @@ int main(int argc, char **argv)
 		if (paused) {
 			if (rebindAction) {
 				const u32 candidate = input.keysDown & REBIND_KEY_MASK;
-				if (candidate) {
+				if (candidate && !(candidate & (candidate - 1u))) {
 					if (!key_is_used(&settings, rebindAction, candidate)) {
 						assign_key(&settings, rebindAction, candidate);
 						saveStatus = 0;
@@ -267,7 +269,7 @@ int main(int argc, char **argv)
 					cam.mode = cam.mode == F3DS_CAM_CHASE ? F3DS_CAM_COCKPIT : F3DS_CAM_CHASE;
 					settings.cameraMode = cam.mode;
 				} else if (selected >= 9 && selected <= 12) rebindAction = selected - 8;
-				else if (selected == 13) saveStatus = settings_save(&settings);
+				else if (selected == 13) saveStatus = settings_save(&settings) ? 1 : -2;
 			}
 			if (input.menuBack) paused = 0;
 			}
@@ -277,6 +279,9 @@ int main(int argc, char **argv)
 			inputCfg.keyBrake = settings.keyBrake;
 			inputCfg.keyHandbrake = settings.keyHandbrake;
 			inputCfg.keyCamera = settings.keyCamera;
+			settings.orbitYaw = cam.orbitYaw;
+			settings.orbitPitch = cam.orbitPitch;
+			settings.cameraMode = cam.mode;
 			draw_pause_menu(&settings, selected, saveStatus);
 			if (rebindAction) printf("\x1b[21;3HAppuie sur une touche pour l'assigner...");
 		} else {
