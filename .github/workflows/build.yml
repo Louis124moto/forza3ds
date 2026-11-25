@@ -1,0 +1,49 @@
+name: Build 3DS homebrew
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "source/**"
+      - "include/**"
+      - "Makefile"
+      - ".github/workflows/build.yml"
+  pull_request:
+    paths:
+      - "source/**"
+      - "include/**"
+      - "Makefile"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkitarm:20260610
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Citro3D
+        run: |
+          pacman -Sy --noconfirm
+          pacman -S --needed --noconfirm 3ds-citro3d
+
+      - name: Build 3DSX
+        run: |
+          test -n "$DEVKITPRO"
+          test -n "$DEVKITARM"
+          make clean
+          make -j2
+
+      - name: Upload homebrew build
+        uses: actions/upload-artifact@v4
+        with:
+          name: forza3ds-3dsx
+          path: forza3ds.3dsx
+          if-no-files-found: error
+          retention-days: 14
