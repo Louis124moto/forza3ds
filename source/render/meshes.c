@@ -1,4 +1,5 @@
 #include "meshes.h"
+#include <string.h>
 
 #define MESH_MAX_VERTS 30000
 

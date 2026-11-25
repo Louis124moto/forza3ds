@@ -32,11 +32,12 @@ static void test_track_terrain_collision(void)
  assert(seg==0 && along>=0.0f && along<=track.segLen[0]);
  assert(terrain.rampCount>0 && terrain.slickCount>0);
  assert(terrain_grip_factor(&terrain,0.0f,0.0f)>0.0f);
- FVec3 p=fvec3(track.pts[0].x+track.right[0].x*(TRACK_HALF_WIDTH+2.0f),0.0f,
-               track.pts[0].z+track.right[0].z*(TRACK_HALF_WIDTH+2.0f));
+ FVec3 p=fvec3(track.pts[0].x+track.right[0].x*30.0f,0.0f,
+               track.pts[0].z+track.right[0].z*30.0f);
  float vx=10.0f,vz=0.0f;
+ assert(track_resolve_collision(&track,&p,&vx,&vz)==0);
+ p=track.obstacles[0].center;
  assert(track_resolve_collision(&track,&p,&vx,&vz)==1);
- assert(track_nearest(&track,p,0,0)<=TRACK_HALF_WIDTH+1e-3f);
 }
 
 static void test_vehicle_acceleration_and_braking(void)

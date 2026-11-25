@@ -78,23 +78,8 @@ int track_resolve_collision(const F3DSTrack *t, FVec3 *pos, float *vx, float *vz
 {
 	int collided = 0;
 
-	/* Track corridor: distance from the centerline. */
-	int seg = 0;
-	float s = 0.0f;
-	const float lat = track_nearest(t, *pos, &seg, &s);
-	(void)s;
-	if (lat > TRACK_HALF_WIDTH) {
-		const FVec3 r = t->right[seg];
-		const float side = ((pos->x - t->pts[seg].x) * r.x + (pos->z - t->pts[seg].z) * r.z) >= 0.0f ? 1.0f : -1.0f;
-		const FVec3 inward = side > 0.0f ? fvec3(-r.x, 0.0f, -r.z) : fvec3(r.x, 0.0f, r.z);
-		const float depth = lat - TRACK_HALF_WIDTH;
-		pos->x += inward.x * depth;
-		pos->z += inward.z * depth;
-		/* Scrub speed against the invisible corridor wall. */
-		*vx *= 0.7f;
-		*vz *= 0.7f;
-		collided = 1;
-	}
+	/* The road is not a closed collision corridor: the island is freely explorable.
+	 * Only actual obstacle boxes below generate a collision response. */
 
 	/* Obstacle boxes, pushout along the axis of least penetration. */
 	const float carRadius = 0.9f;
