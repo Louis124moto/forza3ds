@@ -6,6 +6,7 @@
 typedef struct {
 	float dt;
 	float maxCatchUp;
+	float accumulator;
 	float simTime;
 	float frameTime;
 	u64 lastTick;
