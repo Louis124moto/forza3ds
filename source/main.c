@@ -237,7 +237,7 @@ static void draw_workshop_page(F3DSWorkshopPage page, int selected, const F3DSVe
 		printf("\x1b[14;4H%s Pistons : %d", selected == 8 ? ">" : " ", d->pistonLevel);
 		printf("\x1b[16;4H%s Retour", selected == 9 ? ">" : " ");
 	} else if (page == WORKSHOP_GEARBOX) {
-		for (int i = 0; i < 10; ++i) menu_ui_item(i < 8 ? 6 + i : 16, selected == i);
+		for (int i = 0; i < 10; ++i) menu_ui_item(i < 9 ? 6 + i : 16, selected == i);
 		printf("\x1b[4;4HBoite de vitesses");
 		printf("\x1b[6;4H%s Transmission : %s", selected == 0 ? ">" : " ", d->manualTransmission ? "manuelle" : "automatique");
 		printf("\x1b[7;4H%s Nombre de rapports : %d", selected == 1 ? ">" : " ", d->gearCount);
