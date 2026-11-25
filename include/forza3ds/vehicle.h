@@ -37,6 +37,7 @@ typedef struct {
 	float shiftUpRpm, shiftDownRpm, shiftTime;
 	float gearRatioR, finalDrive, drivetrainEff;
 	int gearCount;
+	int manualTransmission;
 	float gearRatios[F3DS_GEARS];
 } F3DSVehicleDef;
 
