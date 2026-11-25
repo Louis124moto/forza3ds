@@ -126,18 +126,31 @@ void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car,
 		fmaxf(0.02f, suspensionRate * dt * 0.12f));
 	const float suspensionGrip = clampf(1.0f - fabsf(car->suspensionTravel) * 1.8f, 0.68f, 1.0f);
 
-	/* Yaw response depends on wheelbase, tire grip and differential setup. */
-	const float diffYaw = 1.0f + 0.18f * def->diffRearLock - 0.10f * def->diffFrontLock;
+	/* Bicycle-model yaw dynamics. Steering changes heading, not merely world X/Z.
+	 * The target follows v/L*tan(delta); a bounded response models tire/chassis
+	 * yaw inertia without the previous very weak low-speed steering response. */
+	const float diffYaw = clampf(1.0f + 0.10f * def->diffRearLock -
+		0.06f * def->diffFrontLock, 0.75f, 1.20f);
+	const float speedForSteering = fabsf(fwdVel);
+	const float steerAuthority = 1.0f - clampf(speedForSteering *
+		fmaxf(def->steerSpeedDrop, 0.0f), 0.0f, 0.48f);
+	const float effectiveSteer = car->steerAngle * steerAuthority;
 	float yawTarget = 0.0f;
-	if (fabsf(fwdVel) > 0.1f)
-		yawTarget = fwdVel / fmaxf(def->wheelBase, 0.5f) * tanf(car->steerAngle) *
-			def->yawAuthority * diffYaw * (0.25f + 0.75f * surfaceGrip);
-	if (inRaw->handbrake && fabsf(fwdVel) > 2.0f)
-		yawTarget *= 1.65f;
-	const float yawBlend = (inRaw->handbrake ? 4.0f : 7.5f) * dt;
-	car->yawRate = approachf(car->yawRate, yawTarget,
-		yawBlend * fabsf(yawTarget) + yawBlend * 0.25f);
-	car->yaw += car->yawRate * dt;
+	if (speedForSteering > 0.05f) {
+		const float direction = fwdVel >= 0.0f ? 1.0f : -1.0f;
+		yawTarget = direction * speedForSteering /
+			fmaxf(def->wheelBase, 0.5f) * tanf(effectiveSteer) *
+			clampf(def->yawAuthority, 0.35f, 1.5f) * diffYaw;
+	}
+	if (inRaw->handbrake && speedForSteering > 2.0f)
+		yawTarget *= 1.35f;
+	const float oldYawRate = car->yawRate;
+	const float yawResponse = clampf(12.0f * dt, 0.0f, 1.0f);
+	car->yawRate += (yawTarget - car->yawRate) * yawResponse;
+	const float yawDelta = 0.5f * (oldYawRate + car->yawRate) * dt;
+	car->yaw += yawDelta;
+	if (car->yaw > F3DS_PI) car->yaw -= 2.0f * F3DS_PI;
+	else if (car->yaw < -F3DS_PI) car->yaw += 2.0f * F3DS_PI;
 
 	const float centerDiffGrip = 1.0f - 0.12f * def->diffCenterLock;
 	const float gripK = (inRaw->handbrake ? def->gripLatHandbrake : def->gripLat) *
