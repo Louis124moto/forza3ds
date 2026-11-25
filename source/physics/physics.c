@@ -85,8 +85,8 @@ void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car,
 	if (car->shiftTimer <= 0.0f && car->gear > 0 && inRaw->throttle > 0.0f) {
 		const float wheelForce = vehicle_engine_torque(def, car->rpm) * ratio *
 			def->drivetrainEff / fmaxf(def->wheelRadius, 0.05f) * inRaw->throttle;
-		const float driveShare = clampf(1.0f - def->frontTorqueShare, 0.0f, 1.0f) +
-			clampf(def->frontTorqueShare, 0.0f, 1.0f);
+		const float split = clampf(def->frontTorqueShare, 0.0f, 1.0f);
+		const float driveShare = 1.0f - fabsf(split - 0.5f) * 0.16f;
 		const float diffEffect = 1.0f + 0.12f * def->diffRearLock +
 			0.08f * def->diffCenterLock + 0.04f * def->diffFrontLock;
 		const float tractionLimit = def->mass * F3DS_GRAVITY * tireGrip *
@@ -108,7 +108,8 @@ void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car,
 	/* Sprung-mass roll approximation: spring rate and damping affect lateral grip. */
 	const float lateralAcceleration = car->yawRate * fwdVel;
 	const float spring = fmaxf(def->springRate, 1000.0f);
-	const float targetTravel = clampf(def->mass * lateralAcceleration / spring * 0.18f, -0.16f, 0.16f);
+	const float cgLever = fmaxf(def->cgHeight + def->rideHeight, 0.1f);
+	const float targetTravel = clampf(def->mass * lateralAcceleration / spring * cgLever * 0.34f, -0.16f, 0.16f);
 	const float damping = targetTravel > car->suspensionTravel ?
 		fmaxf(def->damperCompression, 0.0f) : fmaxf(def->damperRebound, 0.0f);
 	const float suspensionRate = spring / fmaxf(def->mass, 1.0f) +
