@@ -209,6 +209,10 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Documenter les fonctionnalités réellement terminées.
 - [ ] Ne pas confondre compilation réussie et fonctionnalité jouable.
 
+## Diagnostic rendu 3D — 25/11/2026
+- [x] Corriger les initialisations positionnelles de `C3D_FVec` dans `source/render/renderer.c` : Citro3D stocke les composantes dans l'ordre mémoire `w, z, y, x`, donc les vecteurs caméra et vertical étaient mal construits.
+- [ ] Compiler et vérifier le rendu sur New 3DS après correction ; confirmer que la scène, la caméra de poursuite et la vue cockpit sont visibles sans traversée de géométrie.
+
 ## Ordre de réalisation
 1. Base native et compilation.
 2. Menu principal et navigation entre Mode Libre et Mode Progression.
