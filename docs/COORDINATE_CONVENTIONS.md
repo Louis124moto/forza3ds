@@ -1,37 +1,23 @@
 # Coordinate and Unit Conventions
-
-This document records the agreed world-coordinate conventions for Forza3DS.
-These conventions are authoritative for simulation and world data.
-
+These conventions are authoritative for world, simulation, and configuration data.
 ## Coordinate system
-
-The engine uses a **right-handed** world coordinate system:
-
+The engine uses a right-handed world coordinate system.
 | Axis | Positive direction | Meaning |
 |---|---|---|
-| +X | West | Horizontal west/east axis |
+| +X | East | Horizontal east/west axis |
 | +Y | Up | Vertical axis |
 | +Z | North | Horizontal north/south axis |
-
-The corresponding negative directions are:
-
-- **-X:** East
-- **-Y:** Down
-- **-Z:** South
-
+Negative directions are -X West, -Y Down, and -Z South.
 ## World scale
-
-- **1 world unit = 1 metre.**
-- Positions, distances, lengths, and speeds derived from world-space distances must use this scale consistently.
-
+- 1 world unit = 1 metre.
+- Positions, distances, lengths, and speeds derived from world-space distances use SI units.
 ## Angles
-
-- Angles are expressed in **degrees**.
-- Do not silently interpret degree-valued data as radians.
-- Any conversion required by a math or graphics API must happen explicitly at the relevant boundary.
-
-## Implementation notes
-
-- Keep simulation coordinates consistent with this document.
-- Any conversion between simulation coordinates and the Citro3D/rendering coordinate convention must be explicit and centralized.
-- This document does not yet define vehicle-forward orientation, yaw sign, rotation order, or the renderer's matrix layout. Those conventions must be specified separately before code relies on them.
+- Gameplay angle values are expressed in degrees.
+- Vehicle yaw, yaw rate, steering angle, and camera orbit angles use degrees; yaw rate is degrees/second.
+- Convert to radians explicitly only at C math and Citro3D API boundaries.
+- Never pass degree values directly to trigonometric functions or APIs expecting radians.
+## Orientation
+- Vehicle yaw = 0 faces +Z (north).
+- Positive yaw rotates from +Z toward +X (east), around +Y.
+- Positive steering produces positive yaw while moving forward.
+- Rendering uses the same world axes; matrix/API angle conversion occurs at the renderer boundary.
