@@ -96,7 +96,7 @@ void meshes_build(F3DSMeshes *m, const F3DSTrack *track, const F3DSTerrain *terr
 
 	/* --- Decor barrier wall --- */
 	m->decorStart = b.n;
-	for (int i = 0; i < TRACK_POINTS; i += 3) {
+	for (int i = 0; i + 3 < TRACK_POINTS; i += 3) {
 		const FVec3 r = track->right[i];
 		const float side = (i % 6) ? 1.0f : -1.0f;
 		const FVec3 a = fvec3_add(track->pts[i], fvec3_scale(r, side * (TRACK_HALF_WIDTH + 1.5f)));
