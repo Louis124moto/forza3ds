@@ -146,6 +146,8 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Permettre peintures, roues et modifications visuelles.
 - [ ] Prévoir améliorations moteur, transmission, pneus et suspension.
 - [ ] Permettre le réglage et la préparation détaillée des moteurs : régime maximal, pression de suralimentation du turbo et autres paramètres, avec des effets cohérents sur les performances et le son.
+- [ ] Créer un véritable atelier accessible en jeu, avec une interface permettant de régler individuellement les paramètres de préparation moteur.
+- [ ] Ne pas imposer de plafond artificiel aux réglages de préparation (pression de turbo, régime maximal et autres paramètres) ; faire ressentir clairement chaque modification dans le comportement du véhicule et la rendre nettement audible dans le son du moteur.
 - [ ] Ajouter découverte et restauration automatique des véhicules abandonnés.
 - [ ] Gérer réparations et pièces récupérées/achetées.
 - [ ] Ne pas implémenter d'usure générale permanente.
