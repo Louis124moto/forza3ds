@@ -319,6 +319,19 @@ static void pause_adjust(F3DSSettings *s, F3DSCamera *cam, int item, int dir)
 	}
 }
 
+static void car_place_in_garage(F3DSVehicleState *car, const F3DSVehicleDef *def,
+	const F3DSTrack *track)
+{
+	car->pos = track->pts[0];
+	car->yaw = atan2f(track->fwd[0].x, track->fwd[0].z);
+	car->vx = car->vz = car->vy = car->speed = car->yawRate = 0.0f;
+	car->steerAngle = car->suspensionTravel = car->shiftTimer = 0.0f;
+	car->airborne = false;
+	car->gear = 1;
+	car->rpm = def->idleRpm;
+	car->engineLoad = car->throttle = 0.0f;
+}
+
 int main(int argc, char **argv)
 {
 	(void)argc; (void)argv;
@@ -356,6 +369,7 @@ int main(int argc, char **argv)
 	cam.chaseDistance = settings.chaseDistance; cam.chaseHeight = settings.chaseHeight;
 	cam.recenterSpeed = settings.recenterSpeed; cam.orbitYaw = settings.orbitYaw;
 	cam.orbitPitch = settings.orbitPitch; cam.mode = (F3DSCameraMode)settings.cameraMode;
+	camera_update(&cam, &car, &input, 0.0f);
 
 	(void)engine_audio_init();
 	F3DSScreen screen = SCREEN_MAIN;
@@ -368,6 +382,7 @@ int main(int argc, char **argv)
 		if (input.exit) break;
 
 		if (screen != SCREEN_DRIVE) loop.accumulator = 0.0f;
+		if (screen == SCREEN_DRIVE || screen == SCREEN_PAUSE) renderer_set_garage(false);
 		if (screen == SCREEN_MAIN) {
 			engine_audio_set_enabled(false);
 			if (input.menuUp) mainSelected = (mainSelected + 2) % 3;
@@ -439,9 +454,9 @@ int main(int argc, char **argv)
 				if (input.menuRight) pause_adjust(&settings, &cam, pauseSelected, 1);
 				if (input.menuConfirm) {
 					if (pauseSelected == 0) { screen = SCREEN_DRIVE; loop.accumulator = 0.0f; }
-					else if (pauseSelected == 1) { screen = SCREEN_WORKSHOP; workshopPage = WORKSHOP_HOME; workshopSelected = 0; }
-					else if (pauseSelected == 2) { screen = SCREEN_CAR; carSelected = 0; }
-					else if (pauseSelected == 3) screen = SCREEN_MAIN;
+					else if (pauseSelected == 1) { car_place_in_garage(&car, &def, &track); camera_update(&cam, &car, &input, 0.0f); screen = SCREEN_WORKSHOP; workshopPage = WORKSHOP_HOME; workshopSelected = 0; }
+					else if (pauseSelected == 2) { car_place_in_garage(&car, &def, &track); camera_update(&cam, &car, &input, 0.0f); screen = SCREEN_CAR; carSelected = 0; }
+					else if (pauseSelected == 3) { car_place_in_garage(&car, &def, &track); camera_update(&cam, &car, &input, 0.0f); screen = SCREEN_MAIN; }
 					else if (pauseSelected == 4) {
 						cam.mode = cam.mode == F3DS_CAM_CHASE ? F3DS_CAM_COCKPIT : F3DS_CAM_CHASE;
 						settings.cameraMode = cam.mode;
@@ -479,6 +494,9 @@ int main(int argc, char **argv)
 			}
 		}
 
+		if (screen == SCREEN_MAIN || screen == SCREEN_CAR || screen == SCREEN_WORKSHOP || screen == SCREEN_PROGRESSION_INFO)
+			renderer_set_garage(true);
+		else renderer_set_garage(false);
 		if (screen != SCREEN_DRIVE) renderer_render(&cam, &car);
 		gfxFlushBuffers(); gfxSwapBuffers(); gspWaitForVBlank();
 	}
