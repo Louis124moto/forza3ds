@@ -15,7 +15,7 @@ Jeu de conduite 3D natif pour New Nintendo 3DS, écrit en C avec devkitARM, libc
 - [ ] Gérer proprement les fichiers externes invalides et les erreurs mémoire.
 
 ## Vision du jeu
-- [ ] Jeu solo de conduite et d'exploration libre, avec courses organisées et sans circulation routière.
+- [ ] Jeu solo avec deux modes distincts : mode Libre (bac à sable sans restrictions) et mode Progression (collection, argent et récompenses de courses), sans circulation routière.
 - [ ] Mélange d'exploration automobile, de conduite simulation et de courses.
 - [ ] Grande île fictive d'inspiration japonaise, montagneuse et découpée en plusieurs péninsules.
 - [ ] Biomes : montagnes, forêts, bambouseraies, campagnes, villages, villes, zones industrielles, côtes, plages, lacs et rivières.
@@ -24,6 +24,18 @@ Jeu de conduite 3D natif pour New Nintendo 3DS, écrit en C avec devkitARM, libc
 - [ ] Garage 3D, collection de voitures, personnalisations visuelles et mécaniques.
 - [ ] Véhicules abandonnés placés selon les biomes et les bâtiments, restaurés automatiquement à la découverte.
 - [ ] Argent gagné par les courses ; pas de niveaux de personnage.
+
+## Menus et modes de jeu — priorité principale
+- [ ] Créer un vrai menu principal clair, navigable à la manette et adapté aux deux écrans.
+- [ ] Proposer au minimum deux entrées distinctes : Mode Libre et Mode Progression.
+- [ ] Mode Libre : donner immédiatement accès à toutes les voitures présentes dans le jeu, sans déblocage, achat ni coût.
+- [ ] Mode Libre : permettre de choisir une voiture et d'ouvrir directement son atelier complet, sans devoir passer par une progression.
+- [ ] Mode Libre : autoriser librement les modifications visuelles, mécaniques et les réglages détaillés, puis essayer immédiatement la voiture en conduite libre.
+- [ ] Mode Libre : rendre les pièces et possibilités de préparation disponibles sans restriction d'argent ou de progression.
+- [ ] Mode Libre : permettre de revenir au choix des voitures et à l'atelier depuis la session de conduite.
+- [ ] Mode Progression : conserver la collection à débloquer/restaurer et l'économie basée sur les récompenses de courses.
+- [ ] Séparer les données et sauvegardes du bac à sable Libre de celles de la Progression afin que les essais libres ne modifient pas la collection ou l'économie de progression.
+- [ ] Organiser les menus autour des trois fonctions centrales du jeu : choisir une voiture, la modifier/régler et conduire pour ressentir les effets.
 
 ## Première démo jouable — priorité absolue
 - [ ] Initialiser l'application native et les écrans.
@@ -36,6 +48,7 @@ Jeu de conduite 3D natif pour New Nintendo 3DS, écrit en C avec devkitARM, libc
 - [ ] Afficher vitesse et rapport sur l'écran inférieur.
 - [ ] Mesurer les performances sur New 3DS et profiler avant d'ajouter des détails.
 - [ ] Obtenir une démo stable et soignée avant d'élargir le périmètre.
+- [ ] La première démo doit déjà présenter le flux central : menu principal → mode Libre → choix d'une voiture → atelier/réglages → conduite libre → retour à l'atelier.
 
 ## Architecture du moteur
 - [ ] Moteur spécifique au jeu, écrit en C.
@@ -46,7 +59,7 @@ Jeu de conduite 3D natif pour New Nintendo 3DS, écrit en C avec devkitARM, libc
 - [ ] Mesurer CPU, GPU, mémoire, temps de génération et temps de frame sur la console.
 - [ ] Définir les budgets de mémoire, triangles, matériaux, textures et objets visibles à partir de mesures réelles.
 
-## Physique automobile personnalisée
+## Physique automobile personnalisée — priorité principale
 - [ ] Définir unités, échelle, repère et conventions de coordonnées.
 - [ ] Implémenter masse, inertie, centre de gravité et forces longitudinales/latérales.
 - [ ] Implémenter direction progressive avec inertie.
@@ -57,6 +70,8 @@ Jeu de conduite 3D natif pour New Nintendo 3DS, écrit en C avec devkitARM, libc
 - [ ] Implémenter moteur, rapports et transmissions automatique/manuelle.
 - [ ] Ajouter progressivement ABS, antipatinage et aides configurables.
 - [ ] Créer des comportements distincts par véhicule.
+- [ ] Faire réagir immédiatement la physique aux réglages et pièces changés dans l'atelier : puissance/couple, régime, suralimentation, rapports, différentiels, suspensions et pneus.
+- [ ] Faire en sorte que les modifications moteur changent aussi réellement la signature sonore, le régime et la réponse à la charge.
 - [ ] Écrire des tests numériques déterministes pour les fonctions physiques critiques.
 
 ## Modèles 3D générés et personnalisables
@@ -139,8 +154,10 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Calculer les récompenses selon classement et performance.
 - [ ] Enregistrer les records personnels.
 
-## Garage et véhicules
-- [ ] Créer un garage 3D avec caméra d'inspection.
+## Garage, atelier et véhicules — priorité principale
+- [ ] Créer un garage 3D avec caméra d'inspection, accessible directement depuis les menus et le mode Libre.
+- [ ] Faire de l'atelier de modifications une fonctionnalité centrale, pas un menu secondaire réservé à la fin du jeu.
+- [ ] Toute modification appliquée dans l'atelier doit être transmise immédiatement au modèle physique et au système audio, puis vérifiable en conduite.
 - [ ] Gérer la collection de véhicules.
 - [ ] Séparer données visuelles, physiques et mécaniques.
 - [ ] Permettre peintures, roues et modifications visuelles.
@@ -194,15 +211,17 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 
 ## Ordre de réalisation
 1. Base native et compilation.
-2. Scène 3D, contrôles et caméra.
-3. Première voiture et physique.
-4. Route, collisions et HUD.
-5. Profilage et optimisation sur New 3DS.
-6. Importateur OBJ et assignation des modèles.
-7. Générateur de terrain et streaming.
-8. Routes, biomes et implantations.
-9. Courses, IA et garage.
-10. Sauvegarde, audio et finition.
+2. Menu principal et navigation entre Mode Libre et Mode Progression.
+3. Garage/atelier 3D, choix de voiture et architecture des modifications.
+4. Physique automobile et transmission effective de chaque réglage à la simulation.
+5. Audio moteur réactif aux pièces, réglages, RPM et charge.
+6. Scène de conduite, contrôles, caméras, route, collisions et HUD.
+7. Boucle complète de démo : menu → voiture → atelier → conduite → atelier.
+8. Profilage et optimisation sur New 3DS.
+9. Importateur OBJ et assignation des modèles.
+10. Générateur de terrain, streaming, routes, biomes et implantations.
+11. Courses, IA et progression.
+12. Sauvegarde, audio environnemental et finition.
 
 ## Décisions reportées
 - Budgets mémoire et polygones établis par mesures réelles.
