@@ -10,6 +10,7 @@
 #include "engine_audio.h"
 #include "hud.h"
 #include "input.h"
+#include "menu_ui.h"
 #include "physics.h"
 #include "platform.h"
 #include "renderer.h"
@@ -100,6 +101,7 @@ static int settings_save(const F3DSSettings *s)
 static void menu_title(const char *title)
 {
 	consoleClear();
+	menu_ui_begin();
 	printf("\x1b[1;3HFORZA3DS");
 	printf("\x1b[2;3H%s", title);
 	printf("\x1b[27;3HA confirmer   B retour   START pause");
@@ -108,6 +110,9 @@ static void menu_title(const char *title)
 static void draw_main_menu(int selected)
 {
 	menu_title("MENU PRINCIPAL");
+	menu_ui_item(7, selected == 0);
+	menu_ui_item(9, selected == 1);
+	menu_ui_item(11, selected == 2);
 	printf("\x1b[7;5H%s MODE LIBRE", selected == 0 ? ">" : " ");
 	printf("\x1b[9;5H%s MODE PROGRESSION", selected == 1 ? ">" : " ");
 	printf("\x1b[11;5H%s QUITTER", selected == 2 ? ">" : " ");
@@ -119,6 +124,8 @@ static void draw_main_menu(int selected)
 static void draw_car_select(int selected)
 {
 	menu_title("CHOIX DU VEHICULE - MODE LIBRE");
+	menu_ui_item(7, selected == 0);
+	menu_ui_item(9, selected == 1);
 	printf("\x1b[7;5H%s Prototype Sport", selected == 0 ? ">" : " ");
 	printf("\x1b[9;5H%s Retour", selected == 1 ? ">" : " ");
 	printf("\x1b[14;5HVehicule prototype actuellement integre.");
@@ -137,6 +144,7 @@ static const char *tire_name(F3DSTireType t)
 static void draw_workshop_home(int selected, const F3DSVehicleDef *d)
 {
 	menu_title("ATELIER - PROTOTYPE SPORT");
+	for (int i = 0; i < 7; ++i) menu_ui_item(5 + i, selected == i);
 	printf("\x1b[5;5H%s Moteur et suralimentation", selected == 0 ? ">" : " ");
 	printf("\x1b[6;5H%s Boite de vitesses", selected == 1 ? ">" : " ");
 	printf("\x1b[7;5H%s Differentiels", selected == 2 ? ">" : " ");
@@ -216,6 +224,7 @@ static void draw_workshop_page(F3DSWorkshopPage page, int selected, const F3DSVe
 {
 	menu_title("ATELIER - REGLAGES");
 	if (page == WORKSHOP_ENGINE) {
+		for (int i = 0; i < 10; ++i) menu_ui_item(i < 9 ? 6 + i : 16, selected == i);
 		printf("\x1b[4;4HMoteur");
 		printf("\x1b[6;4H%s Couple : %.0f Nm", selected == 0 ? ">" : " ", d->torqueBase);
 		printf("\x1b[7;4H%s Turbo : %s", selected == 1 ? ">" : " ", d->turboInstalled ? "oui" : "non");
@@ -228,6 +237,7 @@ static void draw_workshop_page(F3DSWorkshopPage page, int selected, const F3DSVe
 		printf("\x1b[14;4H%s Pistons : %d", selected == 8 ? ">" : " ", d->pistonLevel);
 		printf("\x1b[16;4H%s Retour", selected == 9 ? ">" : " ");
 	} else if (page == WORKSHOP_GEARBOX) {
+		for (int i = 0; i < 10; ++i) menu_ui_item(i < 8 ? 6 + i : 16, selected == i);
 		printf("\x1b[4;4HBoite de vitesses");
 		printf("\x1b[6;4H%s Transmission : %s", selected == 0 ? ">" : " ", d->manualTransmission ? "manuelle" : "automatique");
 		printf("\x1b[7;4H%s Nombre de rapports : %d", selected == 1 ? ">" : " ", d->gearCount);
@@ -236,6 +246,7 @@ static void draw_workshop_page(F3DSWorkshopPage page, int selected, const F3DSVe
 			printf("\x1b[%d;4H%s Rapport %d : %.2f", 9 + i, selected == i + 3 ? ">" : " ", i + 1, d->gearRatios[i]);
 		printf("\x1b[16;4H%s Retour", selected == 9 ? ">" : " ");
 	} else if (page == WORKSHOP_DIFF) {
+		for (int i = 0; i < 5; ++i) menu_ui_item(i < 4 ? 6 + i : 11, selected == i);
 		printf("\x1b[4;4HDifferentiels");
 		printf("\x1b[6;4H%s Blocage avant : %.2f", selected == 0 ? ">" : " ", d->diffFrontLock);
 		printf("\x1b[7;4H%s Blocage central : %.2f", selected == 1 ? ">" : " ", d->diffCenterLock);
@@ -243,6 +254,7 @@ static void draw_workshop_page(F3DSWorkshopPage page, int selected, const F3DSVe
 		printf("\x1b[9;4H%s Couple vers avant : %.2f", selected == 3 ? ">" : " ", d->frontTorqueShare);
 		printf("\x1b[11;4H%s Retour", selected == 4 ? ">" : " ");
 	} else if (page == WORKSHOP_SUSPENSION) {
+		for (int i = 0; i < 5; ++i) menu_ui_item(i < 4 ? 6 + i : 11, selected == i);
 		printf("\x1b[4;4HSuspension");
 		printf("\x1b[6;4H%s Hauteur : %.2f m", selected == 0 ? ">" : " ", d->rideHeight);
 		printf("\x1b[7;4H%s Raideur ressort : %.0f N/m", selected == 1 ? ">" : " ", d->springRate);
@@ -250,6 +262,7 @@ static void draw_workshop_page(F3DSWorkshopPage page, int selected, const F3DSVe
 		printf("\x1b[9;4H%s Detente : %.0f", selected == 3 ? ">" : " ", d->damperRebound);
 		printf("\x1b[11;4H%s Retour", selected == 4 ? ">" : " ");
 	} else {
+		for (int i = 0; i < 3; ++i) menu_ui_item(i < 2 ? 6 + i : 9, selected == i);
 		printf("\x1b[4;4HPneumatiques");
 		printf("\x1b[6;4H%s Type : %s", selected == 0 ? ">" : " ", tire_name(d->tireType));
 		printf("\x1b[7;4H%s Coefficient grip : %.2f", selected == 1 ? ">" : " ", d->tireGrip);
@@ -288,6 +301,7 @@ static void assign_key(F3DSSettings *s, int action, u32 key)
 static void draw_pause_menu(int selected, const F3DSSettings *s)
 {
 	menu_title("PAUSE");
+	for (int i = 0; i < 17; ++i) menu_ui_item(4 + i, selected == i);
 	printf("\x1b[4;5H%s Reprendre", selected == 0 ? ">" : " ");
 	printf("\x1b[5;5H%s Retour a l'atelier", selected == 1 ? ">" : " ");
 	printf("\x1b[6;5H%s Choix du vehicule", selected == 2 ? ">" : " ");
@@ -398,6 +412,7 @@ int main(int argc, char **argv)
 		} else if (screen == SCREEN_PROGRESSION_INFO) {
 			engine_audio_set_enabled(false);
 			menu_title("MODE PROGRESSION");
+			menu_ui_panel(48, 96);
 			printf("\x1b[7;5HLe mode Progression n'est pas encore");
 			printf("\x1b[8;5Himplemente : collection, decouvertes");
 			printf("\x1b[9;5Het economie seront ajoutes ensuite.");
