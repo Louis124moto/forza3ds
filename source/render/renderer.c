@@ -58,6 +58,8 @@ void renderer_set_track(const F3DSTrack *track, const F3DSTerrain *terrain)
 {
 	meshes_free(&s_meshes);
 	meshes_build(&s_meshes, track, terrain);
+	if (!s_meshes.data || s_meshes.total == 0)
+		return;
 
 	BufInfo_Init(&s_bufInfo);
 	BufInfo_Add(&s_bufInfo, s_meshes.data, sizeof(F3DSVertex), 2, 0x10);
@@ -85,6 +87,11 @@ void renderer_render(const F3DSCamera *cam, const F3DSVehicleState *car)
 	C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 	C3D_RenderTargetClear(s_target, C3D_CLEAR_ALL, CLEAR_COLOR, 0);
 	C3D_FrameDrawOn(s_target);
+
+	if (!s_meshes.data || s_meshes.total == 0) {
+		C3D_FrameEnd(0);
+		return;
+	}
 
 	C3D_Mtx view;
 	Mtx_LookAt(&view, to_c3d(cam->eye), to_c3d(cam->target), (C3D_FVec){{ 0.0f, 1.0f, 0.0f, 0.0f }}, false);

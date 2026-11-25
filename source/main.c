@@ -86,7 +86,7 @@ static void draw_pause_menu(const F3DSSettings *s, int selected, int saveStatus)
 	consoleClear();
 	printf("\x1b[1;3HFORZA3DS  |  PAUSE\n");
 	printf("\x1b[3;3H%s  Reprendre\n", selected == 0 ? ">" : " ");
-	printf("\x1b[4;3H%s  Vue : %s\n", selected == 1 ? ">" : " ", "X pour changer");
+	printf("\x1b[4;3H%s  Vue : %s\n", selected == 1 ? ">" : " ", "A pour changer");
 	printf("\x1b[5;3H%s  Distance camera : %.1f m\n", selected == 2 ? ">" : " ", s->chaseDistance);
 	printf("\x1b[6;3H%s  Hauteur camera : %.1f m\n", selected == 3 ? ">" : " ", s->chaseHeight);
 	printf("\x1b[7;3H%s  Vitesse recentrage : %.1f\n", selected == 4 ? ">" : " ", s->recenterSpeed);
@@ -176,6 +176,8 @@ int main(int argc, char **argv)
 		input_poll(&input, &inputCfg);
 		if (input.exit) break;
 
+		/* Discard wall-clock time accumulated while paused. */
+		if (paused) loop.accumulator = 0.0f;
 		if (input.pausePressed) paused = !paused;
 		if (paused) {
 			if (input.menuUp) selected = (selected + MENU_ITEMS - 1) % MENU_ITEMS;
