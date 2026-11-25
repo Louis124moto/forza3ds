@@ -48,6 +48,7 @@ void vehicle_def_default(F3DSVehicleDef *d)
 	d->finalDrive = 3.73f;
 	d->drivetrainEff = 0.88f;
 	d->gearCount = 6;
+	d->manualTransmission = 0;
 	d->gearRatios[0] = 3.55f;
 	d->gearRatios[1] = 2.18f;
 	d->gearRatios[2] = 1.52f;
