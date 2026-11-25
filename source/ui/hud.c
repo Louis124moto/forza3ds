@@ -30,6 +30,7 @@ void hud_render(const F3DSVehicleState *car, const F3DSCamera *cam, const F3DSLo
 	       cam->chaseDistance, cam->chaseHeight);
 	printf("\x1b[12;3HFrame: %5.2f ms   FPS: %d\n", loop->frameTime * 1000.0f, loop->fps);
 	printf("\x1b[14;3HA accel  B brake  Y handbrake\n");
-	printf("\x1b[15;3HX camera  C-stick orbit  D-pad dist/height\n");
-	printf("\x1b[16;3HSTART pause  SELECT exit\n");
+	printf("\x1b[15;3HL/R gears (manual)  X camera  C-stick orbit\n");
+	printf("\x1b[16;3HD-pad dist/height  START pause\n");
+	printf("\x1b[17;3HSELECT exit\n");
 }
