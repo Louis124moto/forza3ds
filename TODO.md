@@ -155,6 +155,7 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Caméra extérieure libre et caméra cockpit interchangeables, avec positions personnalisées globales sauvegardées ; voir les règles détaillées dans la section Première démo jouable.
 - [ ] Audio moteur prioritaire, vent et ambiance environnementale.
 - [ ] Faire évoluer le son du moteur de manière réaliste selon le régime moteur (RPM) et la charge.
+- [ ] Spatialiser les sons en 3D selon leur direction et leur distance dans le monde.
 - [ ] Proposer des réglages de volume indépendants pour le moteur et l'ambiance environnementale.
 - [ ] Cycle jour/nuit rapide avec éclairage adapté.
 - [ ] Sauvegarder manuellement la progression (graine, version du générateur, position, garage, assignations, réglages, argent, records et découvertes), avec sauvegarde rapide accessible depuis le menu pause ; une seule sauvegarde de progression. Ne pas sauvegarder automatiquement la progression à la fermeture.
