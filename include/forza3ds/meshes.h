@@ -10,7 +10,6 @@
 typedef struct {
 	float x, y, z;
 	float r, g, b, a;
-	float nx, ny, nz;
 } F3DSVertex;
 
 typedef struct {
@@ -22,7 +21,6 @@ typedef struct {
 	uint32_t decorStart, decorCount;
 	uint32_t terrainStart, terrainCount;
 	uint32_t carStart, carCount;
-	uint32_t glassStart, glassCount;
 	uint32_t cockpitStart, cockpitCount;
 	uint32_t garageStart, garageCount;
 } F3DSMeshes;
