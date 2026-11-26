@@ -14,26 +14,45 @@ typedef struct {
 	uint32_t n, cap;
 } Builder;
 
-static void push(Builder *b, FVec3 p, float r, float g, float bl, float a)
+static void push(Builder *b, FVec3 p, float r, float g, float bl, float a, FVec3 normal)
 {
 	if (b->n >= b->cap)
 		return;
 	F3DSVertex *out = &b->v[b->n++];
 	out->x = p.x; out->y = p.y; out->z = p.z;
 	out->r = r; out->g = g; out->b = bl; out->a = a;
+	out->nx = normal.x; out->ny = normal.y; out->nz = normal.z;
+}
+
+static void push_tri_alpha(Builder *b, FVec3 p0, FVec3 p1, FVec3 p2, float r, float g, float bl, float alpha)
+{
+	const FVec3 a = fvec3_sub(p1, p0);
+	const FVec3 c = fvec3_sub(p2, p0);
+	FVec3 n = fvec3(a.y*c.z-a.z*c.y, a.z*c.x-a.x*c.z, a.x*c.y-a.y*c.x);
+	const float len = fvec3_len(n);
+	if (len > 0.00001f) n = fvec3_scale(n, 1.0f / len);
+	else n = fvec3(0.0f, 1.0f, 0.0f);
+	push(b, p0, r, g, bl, alpha, n);
+	push(b, p1, r, g, bl, alpha, n);
+	push(b, p2, r, g, bl, alpha, n);
 }
 
 static void push_tri(Builder *b, FVec3 p0, FVec3 p1, FVec3 p2, float r, float g, float bl)
 {
-	push(b, p0, r, g, bl, 1.0f);
-	push(b, p1, r, g, bl, 1.0f);
-	push(b, p2, r, g, bl, 1.0f);
+	push_tri_alpha(b, p0, p1, p2, r, g, bl, 1.0f);
 }
 
 static void push_quad(Builder *b, FVec3 p0, FVec3 p1, FVec3 p2, FVec3 p3, float r, float g, float bl)
 {
 	push_tri(b, p0, p1, p2, r, g, bl);
 	push_tri(b, p0, p2, p3, r, g, bl);
+}
+
+static void push_quad_alpha(Builder *b, FVec3 p0, FVec3 p1, FVec3 p2, FVec3 p3,
+	float r, float g, float bl, float alpha)
+{
+	push_tri_alpha(b, p0, p1, p2, r, g, bl, alpha);
+	push_tri_alpha(b, p0, p2, p3, r, g, bl, alpha);
 }
 
 static void push_box(Builder *b, float x0, float y0, float z0, float x1, float y1, float z1,
@@ -210,12 +229,29 @@ void meshes_build(F3DSMeshes *m, const F3DSTrack *track, const F3DSTerrain *terr
 	/* --- Car --- */
 	m->carStart = b.n;
 	push_box(&b, -0.9f, 0.30f, -2.1f, 0.9f, 1.00f, 2.1f, 0.85f, 0.15f, 0.15f);
-	push_box(&b, -0.7f, 1.00f, -1.2f, 0.7f, 1.55f, 0.6f, 0.12f, 0.12f, 0.16f);
+	/* Cabin roof and slim pillars leave the glass surfaces transparent. */
+	push_box(&b, -0.69f, 1.43f, -1.18f, 0.69f, 1.56f, 0.58f, 0.10f, 0.11f, 0.14f);
+	push_box(&b, -0.69f, 1.02f, -1.18f, -0.58f, 1.48f, -1.06f, 0.10f, 0.11f, 0.14f);
+	push_box(&b, 0.58f, 1.02f, -1.18f, 0.69f, 1.48f, -1.06f, 0.10f, 0.11f, 0.14f);
+	push_box(&b, -0.69f, 1.02f, 0.46f, -0.58f, 1.48f, 0.58f, 0.10f, 0.11f, 0.14f);
+	push_box(&b, 0.58f, 1.02f, 0.46f, 0.69f, 1.48f, 0.58f, 0.10f, 0.11f, 0.14f);
 	push_box(&b, -1.05f, 0.0f, -1.65f, -0.75f, 0.62f, -1.05f, 0.08f, 0.08f, 0.08f);
 	push_box(&b, 0.75f, 0.0f, -1.65f, 1.05f, 0.62f, -1.05f, 0.08f, 0.08f, 0.08f);
 	push_box(&b, -1.05f, 0.0f, 1.05f, -0.75f, 0.62f, 1.65f, 0.08f, 0.08f, 0.08f);
 	push_box(&b, 0.75f, 0.0f, 1.05f, 1.05f, 0.62f, 1.65f, 0.08f, 0.08f, 0.08f);
 	m->carCount = b.n - m->carStart;
+
+	/* --- Lightly tinted transparent glazing, submitted after opaque bodywork. --- */
+	m->glassStart = b.n;
+	push_quad_alpha(&b, fvec3(-0.57f,1.10f,-1.08f), fvec3(-0.57f,1.40f,-1.08f),
+		fvec3(0.57f,1.40f,-1.08f), fvec3(0.57f,1.10f,-1.08f), 0.24f,0.48f,0.60f,0.42f);
+	push_quad_alpha(&b, fvec3(-0.57f,1.10f,0.48f), fvec3(0.57f,1.10f,0.48f),
+		fvec3(0.57f,1.40f,0.32f), fvec3(-0.57f,1.40f,0.32f), 0.28f,0.52f,0.66f,0.40f);
+	push_quad_alpha(&b, fvec3(-0.57f,1.10f,-1.08f), fvec3(-0.57f,1.40f,-1.08f),
+		fvec3(-0.57f,1.40f,0.42f), fvec3(-0.57f,1.10f,0.42f), 0.22f,0.43f,0.56f,0.38f);
+	push_quad_alpha(&b, fvec3(0.57f,1.10f,0.42f), fvec3(0.57f,1.40f,0.42f),
+		fvec3(0.57f,1.40f,-1.08f), fvec3(0.57f,1.10f,-1.08f), 0.22f,0.43f,0.56f,0.38f);
+	m->glassCount = b.n - m->glassStart;
 
 	/* --- Cockpit interior --- */
 	m->cockpitStart = b.n;

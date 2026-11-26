@@ -392,8 +392,11 @@ int main(int argc, char **argv)
 	F3DSWorkshopPage workshopPage = WORKSHOP_HOME;
 	int mainSelected = 0, carSelected = 0, workshopSelected = 0, pauseSelected = 0, rebindAction = 0;
 	unsigned int frameCounter = 0;
+	float worldTime = 0.0f;
 	while (aptMainLoop()) {
 		int steps = core_loop_begin_frame(&loop);
+		worldTime += loop.frameTime;
+		renderer_set_time(worldTime / 480.0f);
 		input_poll(&input, &inputCfg);
 		if (input.exit) break;
 
