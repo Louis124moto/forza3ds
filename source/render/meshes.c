@@ -229,29 +229,12 @@ void meshes_build(F3DSMeshes *m, const F3DSTrack *track, const F3DSTerrain *terr
 	/* --- Car --- */
 	m->carStart = b.n;
 	push_box(&b, -0.9f, 0.30f, -2.1f, 0.9f, 1.00f, 2.1f, 0.85f, 0.15f, 0.15f);
-	/* Cabin roof and slim pillars leave the glass surfaces transparent. */
-	push_box(&b, -0.69f, 1.43f, -1.18f, 0.69f, 1.56f, 0.58f, 0.10f, 0.11f, 0.14f);
-	push_box(&b, -0.69f, 1.02f, -1.18f, -0.58f, 1.48f, -1.06f, 0.10f, 0.11f, 0.14f);
-	push_box(&b, 0.58f, 1.02f, -1.18f, 0.69f, 1.48f, -1.06f, 0.10f, 0.11f, 0.14f);
-	push_box(&b, -0.69f, 1.02f, 0.46f, -0.58f, 1.48f, 0.58f, 0.10f, 0.11f, 0.14f);
-	push_box(&b, 0.58f, 1.02f, 0.46f, 0.69f, 1.48f, 0.58f, 0.10f, 0.11f, 0.14f);
+	push_box(&b, -0.7f, 1.00f, -1.2f, 0.7f, 1.55f, 0.6f, 0.12f, 0.12f, 0.16f);
 	push_box(&b, -1.05f, 0.0f, -1.65f, -0.75f, 0.62f, -1.05f, 0.08f, 0.08f, 0.08f);
 	push_box(&b, 0.75f, 0.0f, -1.65f, 1.05f, 0.62f, -1.05f, 0.08f, 0.08f, 0.08f);
 	push_box(&b, -1.05f, 0.0f, 1.05f, -0.75f, 0.62f, 1.65f, 0.08f, 0.08f, 0.08f);
 	push_box(&b, 0.75f, 0.0f, 1.05f, 1.05f, 0.62f, 1.65f, 0.08f, 0.08f, 0.08f);
 	m->carCount = b.n - m->carStart;
-
-	/* --- Lightly tinted transparent glazing, submitted after opaque bodywork. --- */
-	m->glassStart = b.n;
-	push_quad_alpha(&b, fvec3(-0.57f,1.10f,-1.08f), fvec3(-0.57f,1.40f,-1.08f),
-		fvec3(0.57f,1.40f,-1.08f), fvec3(0.57f,1.10f,-1.08f), 0.24f,0.48f,0.60f,0.42f);
-	push_quad_alpha(&b, fvec3(-0.57f,1.10f,0.48f), fvec3(0.57f,1.10f,0.48f),
-		fvec3(0.57f,1.40f,0.32f), fvec3(-0.57f,1.40f,0.32f), 0.28f,0.52f,0.66f,0.40f);
-	push_quad_alpha(&b, fvec3(-0.57f,1.10f,-1.08f), fvec3(-0.57f,1.40f,-1.08f),
-		fvec3(-0.57f,1.40f,0.42f), fvec3(-0.57f,1.10f,0.42f), 0.22f,0.43f,0.56f,0.38f);
-	push_quad_alpha(&b, fvec3(0.57f,1.10f,0.42f), fvec3(0.57f,1.40f,0.42f),
-		fvec3(0.57f,1.40f,-1.08f), fvec3(0.57f,1.10f,-1.08f), 0.22f,0.43f,0.56f,0.38f);
-	m->glassCount = b.n - m->glassStart;
 
 	/* --- Cockpit interior --- */
 	m->cockpitStart = b.n;
