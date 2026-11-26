@@ -14,45 +14,26 @@ typedef struct {
 	uint32_t n, cap;
 } Builder;
 
-static void push(Builder *b, FVec3 p, float r, float g, float bl, float a, FVec3 normal)
+static void push(Builder *b, FVec3 p, float r, float g, float bl, float a)
 {
 	if (b->n >= b->cap)
 		return;
 	F3DSVertex *out = &b->v[b->n++];
 	out->x = p.x; out->y = p.y; out->z = p.z;
 	out->r = r; out->g = g; out->b = bl; out->a = a;
-	out->nx = normal.x; out->ny = normal.y; out->nz = normal.z;
-}
-
-static void push_tri_alpha(Builder *b, FVec3 p0, FVec3 p1, FVec3 p2, float r, float g, float bl, float alpha)
-{
-	const FVec3 a = fvec3_sub(p1, p0);
-	const FVec3 c = fvec3_sub(p2, p0);
-	FVec3 n = fvec3(a.y*c.z-a.z*c.y, a.z*c.x-a.x*c.z, a.x*c.y-a.y*c.x);
-	const float len = fvec3_len(n);
-	if (len > 0.00001f) n = fvec3_scale(n, 1.0f / len);
-	else n = fvec3(0.0f, 1.0f, 0.0f);
-	push(b, p0, r, g, bl, alpha, n);
-	push(b, p1, r, g, bl, alpha, n);
-	push(b, p2, r, g, bl, alpha, n);
 }
 
 static void push_tri(Builder *b, FVec3 p0, FVec3 p1, FVec3 p2, float r, float g, float bl)
 {
-	push_tri_alpha(b, p0, p1, p2, r, g, bl, 1.0f);
+	push(b, p0, r, g, bl, 1.0f);
+	push(b, p1, r, g, bl, 1.0f);
+	push(b, p2, r, g, bl, 1.0f);
 }
 
 static void push_quad(Builder *b, FVec3 p0, FVec3 p1, FVec3 p2, FVec3 p3, float r, float g, float bl)
 {
 	push_tri(b, p0, p1, p2, r, g, bl);
 	push_tri(b, p0, p2, p3, r, g, bl);
-}
-
-static void push_quad_alpha(Builder *b, FVec3 p0, FVec3 p1, FVec3 p2, FVec3 p3,
-	float r, float g, float bl, float alpha)
-{
-	push_tri_alpha(b, p0, p1, p2, r, g, bl, alpha);
-	push_tri_alpha(b, p0, p2, p3, r, g, bl, alpha);
 }
 
 static void push_box(Builder *b, float x0, float y0, float z0, float x1, float y1, float z1,
