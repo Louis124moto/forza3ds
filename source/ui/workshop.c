@@ -93,13 +93,13 @@ void workshop_item_text(const F3DSGarage *g, F3DSWorkshopPage page, int item, ch
 }
 
 /* Increment on a fixed grid, with a floor and no ceiling. */
-static float raise(float v, int dir, float inc, float floor_)
+static float raise_value(float v, int dir, float inc, float floor_)
 {
 	const float next = roundf((v + dir * inc) / inc) * inc;
 	return isfinite(next) ? fmaxf(next, floor_) : v;
 }
 
-static float ratio01(float v, int dir) { return clampf(raise(v, dir, 0.05f, 0.0f), 0.0f, 1.0f); }
+static float ratio01(float v, int dir) { return clampf(raise_value(v, dir, 0.05f, 0.0f), 0.0f, 1.0f); }
 
 static int level(int v, int dir)
 {
@@ -118,13 +118,13 @@ bool workshop_adjust(F3DSGarage *g, F3DSWorkshopPage page, int item, int dir)
 	switch (page) {
 	case F3DS_PAGE_ENGINE:
 		switch (item) {
-		case E_TORQUE: d->torqueBase = raise(d->torqueBase, dir, 5.0f, 40.0f); break;
-		case E_RPM: d->maxRpm = raise(d->maxRpm, dir, 100.0f, d->idleRpm + 1000.0f); break;
+		case E_TORQUE: d->torqueBase = raise_value(d->torqueBase, dir, 5.0f, 40.0f); break;
+		case E_RPM: d->maxRpm = raise_value(d->maxRpm, dir, 100.0f, d->idleRpm + 1000.0f); break;
 		case E_TURBO:
 			d->turboInstalled = !d->turboInstalled;
 			if (d->turboInstalled && d->turboBoostBar <= 0.0f) d->turboBoostBar = 0.5f;
 			break;
-		case E_BOOST: d->turboBoostBar = raise(d->turboBoostBar, dir, 0.1f, 0.0f); break;
+		case E_BOOST: d->turboBoostBar = raise_value(d->turboBoostBar, dir, 0.1f, 0.0f); break;
 		case E_INTAKE: d->intakeLevel = level(d->intakeLevel, dir); break;
 		case E_EXHAUST: d->exhaustLevel = level(d->exhaustLevel, dir); break;
 		case E_CAM: d->camshaftLevel = level(d->camshaftLevel, dir); break;
@@ -138,8 +138,8 @@ bool workshop_adjust(F3DSGarage *g, F3DSWorkshopPage page, int item, int dir)
 		else if (item == G_COUNT_GEARS) {
 			const int n = d->gearCount + dir;
 			d->gearCount = n < 1 ? 1 : n > F3DS_MAX_GEARS ? F3DS_MAX_GEARS : n;
-		} else if (item == G_FINAL) d->finalDrive = raise(d->finalDrive, dir, 0.05f, 0.5f);
-		else d->gearRatios[item - G_RATIO] = raise(d->gearRatios[item - G_RATIO], dir, 0.02f, 0.2f);
+		} else if (item == G_FINAL) d->finalDrive = raise_value(d->finalDrive, dir, 0.05f, 0.5f);
+		else d->gearRatios[item - G_RATIO] = raise_value(d->gearRatios[item - G_RATIO], dir, 0.02f, 0.2f);
 		break;
 	case F3DS_PAGE_DIFF:
 		if (item == D_SPLIT) d->frontTorqueShare = ratio01(d->frontTorqueShare, dir);
@@ -150,20 +150,20 @@ bool workshop_adjust(F3DSGarage *g, F3DSWorkshopPage page, int item, int dir)
 	case F3DS_PAGE_SUSPENSION: {
 		const int a = item / 4;
 		switch (item % 4) {
-		case 0: d->rideHeight[a] = raise(d->rideHeight[a], dir, 0.01f, 0.04f); break;
-		case 1: d->springRate[a] = raise(d->springRate[a], dir, 2000.0f, 6000.0f); break;
-		case 2: d->damperCompression[a] = raise(d->damperCompression[a], dir, 200.0f, 0.0f); break;
-		default: d->damperRebound[a] = raise(d->damperRebound[a], dir, 200.0f, 0.0f); break;
+		case 0: d->rideHeight[a] = raise_value(d->rideHeight[a], dir, 0.01f, 0.04f); break;
+		case 1: d->springRate[a] = raise_value(d->springRate[a], dir, 2000.0f, 6000.0f); break;
+		case 2: d->damperCompression[a] = raise_value(d->damperCompression[a], dir, 200.0f, 0.0f); break;
+		default: d->damperRebound[a] = raise_value(d->damperRebound[a], dir, 200.0f, 0.0f); break;
 		}
 		break;
 	}
 	case F3DS_PAGE_TIRES:
 		if (item == T_TYPE)
 			d->tireType = (F3DSTireType)(((int)d->tireType + dir + F3DS_TIRE_COUNT) % F3DS_TIRE_COUNT);
-		else if (item == T_GRIP) d->tireGrip = raise(d->tireGrip, dir, 0.05f, 0.2f);
-		else if (item == T_BRAKE) d->brakeForce = raise(d->brakeForce, dir, 500.0f, 1000.0f);
+		else if (item == T_GRIP) d->tireGrip = raise_value(d->tireGrip, dir, 0.05f, 0.2f);
+		else if (item == T_BRAKE) d->brakeForce = raise_value(d->brakeForce, dir, 500.0f, 1000.0f);
 		else if (item == T_BIAS) d->brakeBiasFront = ratio01(d->brakeBiasFront, dir);
-		else d->handbrakeForce = raise(d->handbrakeForce, dir, 500.0f, 0.0f);
+		else d->handbrakeForce = raise_value(d->handbrakeForce, dir, 500.0f, 0.0f);
 		break;
 	case F3DS_PAGE_LOOK:
 		if (item == L_PAINT) g->paint[car] = (g->paint[car] + dir + F3DS_PAINT_COUNT) % F3DS_PAINT_COUNT;

@@ -30,7 +30,7 @@ static void apt_hook(APT_HookType type, void *param)
 
 static void present_lower(void)
 {
-	F3DSCanvas canvas = { s_lower, consoleGetDefault()->font.gfx };
+	F3DSCanvas canvas = { s_lower, consoleGetDefault()->font.gfx, 0 };
 	screens_draw(&canvas, &s_app);
 	u16 width = 0, height = 0;
 	u8 *fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, &width, &height);
@@ -78,7 +78,7 @@ static void profile_frame(float elapsed, float updateMs, float lowerMs)
 	F3DSRenderStats st;
 	renderer_stats(&st);
 	fprintf(log, "%d,%d,%.1f,%.1f,%.2f,%.2f,%.2f,%.2f,%d,%lu,%.2f,%lu\n", (int)s_app.screen,
-		s_app.garage.selected, frames / time, worst * 1000.0f, sumUpdate / frames,
+		(int)s_app.garage.selected, frames / time, worst * 1000.0f, sumUpdate / frames,
 		sumLower / frames, st.cpuMs, st.gpuMs, st.draws, (unsigned long)st.vertices,
 		st.cmdBufUsage, (unsigned long)linearSpaceFree());
 	fflush(log);

@@ -2,9 +2,9 @@
 #include <string.h>
 
 static const F3DSCarInfo s_info[F3DS_CAR_COUNT] = {
-	{ "Kitsune S",   "Coupe sport propulsion, equilibre" },
+	{ "Kitsune S",   "Coupé sport propulsion, équilibré" },
 	{ "Tanuki 4x4",  "Rallye turbo 4 roues motrices" },
-	{ "Suzume",      "Citadine legere, traction avant" },
+	{ "Suzume",      "Citadine légère, traction avant" },
 	{ "Raijin V8",   "Grosse propulsion, beaucoup de couple" },
 };
 

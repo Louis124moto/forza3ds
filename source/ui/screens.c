@@ -180,10 +180,12 @@ static void draw_settings(F3DSCanvas *c, const F3DSApp *app)
 		: "Gauche/Droite : régler  B : retour");
 	list(c, settings_item_count() + 1, app->selected, 11, settings_row, app);
 	if (app->rebindAction >= 0) {
-		canvas_fill(c, 20, 90, 280, 50, C_HEADER);
-		canvas_fill(c, 20, 90, 280, 2, C_ACCENT);
-		canvas_text(c, 32, 100, 1, C_TEXT, input_action_name((F3DSAction)app->rebindAction));
-		canvas_text(c, 32, 118, 1, C_DIM, "A B X Y L R ZL ZR");
+		/* Covers whole list rows. */
+		const int y = LIST_TOP + 3 * ROW_H;
+		canvas_fill(c, 10, y, 300, 4 * ROW_H, C_HEADER);
+		canvas_fill(c, 10, y, 300, 2, C_ACCENT);
+		canvas_text(c, 32, y + 14, 1, C_TEXT, input_action_name((F3DSAction)app->rebindAction));
+		canvas_text(c, 32, y + 36, 1, C_DIM, "A B X Y L R ZL ZR");
 	} else {
 		canvas_text(c, 18, 208, 1, C_DIM, "Sauvegarde automatique à la sortie");
 	}

@@ -239,20 +239,33 @@ static void road(F3DSMeshes *m, const F3DSTrack *t, int chunk)
 	}
 }
 
+/* Speckled disc: rings of facets with a repeatable shade per facet. */
 static void gravel(F3DSMeshes *m, const F3DSTerrain *t, int chunk)
 {
 	for (int i = 0; i < t->slickCount; ++i) {
 		const F3DSTerrainSlick *s = &t->slicks[i];
 		if (chunk_of(s->x, s->z) != chunk)
 			continue;
-		const int seg = 20;
-		for (int j = 0; j < seg; ++j) {
-			const float a0 = (float)j / seg * 2.0f * F3DS_PI;
-			const float a1 = (float)(j + 1) / seg * 2.0f * F3DS_PI;
-			tri(m, fvec3(s->x, 0.03f, s->z),
-				fvec3(s->x + cosf(a0) * s->radius, 0.03f, s->z + sinf(a0) * s->radius),
-				fvec3(s->x + cosf(a1) * s->radius, 0.03f, s->z + sinf(a1) * s->radius),
-				fvec3(0, 1, 0), (j & 1) ? RGB(0.56f, 0.45f, 0.30f) : RGB(0.50f, 0.40f, 0.27f), false);
+		const int rings = 4, seg = 20;
+		for (int ring = 0; ring < rings; ++ring) {
+			const float r0 = s->radius * ring / rings, r1 = s->radius * (ring + 1) / rings;
+			for (int j = 0; j < seg; ++j) {
+				const float a0 = ((float)j + 0.5f * (ring & 1)) / seg * 2.0f * F3DS_PI;
+				const float a1 = a0 + 2.0f * F3DS_PI / seg;
+				const float am = 0.5f * (a0 + a1);
+				const FVec3 in0 = fvec3(s->x + cosf(a0) * r0, 0.03f, s->z + sinf(a0) * r0);
+				const FVec3 in1 = fvec3(s->x + cosf(a1) * r0, 0.03f, s->z + sinf(a1) * r0);
+				const FVec3 out0 = fvec3(s->x + cosf(a0) * r1, 0.03f, s->z + sinf(a0) * r1);
+				const FVec3 out1 = fvec3(s->x + cosf(a1) * r1, 0.03f, s->z + sinf(a1) * r1);
+				const FVec3 mid = fvec3(s->x + cosf(am) * r1, 0.03f, s->z + sinf(am) * r1);
+				const uint32_t h = (uint32_t)(i * 7919 + ring * 131 + j * 17) * 2654435761u;
+				const float k = 0.92f + 0.04f * (float)(h >> 29);
+				const Color col = RGB(0.52f * k, 0.42f * k, 0.28f * k);
+				const Color dark = RGB(0.49f * k, 0.39f * k, 0.26f * k);
+				tri(m, in0, out0, mid, fvec3(0, 1, 0), col, false);
+				tri(m, in0, mid, in1, fvec3(0, 1, 0), dark, false);
+				tri(m, in1, mid, out1, fvec3(0, 1, 0), col, false);
+			}
 		}
 	}
 }
