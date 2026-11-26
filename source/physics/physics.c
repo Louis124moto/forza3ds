@@ -13,12 +13,6 @@ static FVec3 forward_of(float yaw)
 	return fvec3(sinf(yaw), 0.0f, cosf(yaw));
 }
 
-static float engine_torque(const F3DSVehicleDef *def, float rpm)
-{
-	const float t = clampf((rpm - def->torqueFallRpm) / (def->maxRpm - def->torqueFallRpm), 0.0f, 1.0f);
-	return def->torqueBase * (1.0f - 0.4f * t);
-}
-
 void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car, const F3DSInputState *inRaw, const F3DSTerrain *terrain, float dt)
 {
 	const FVec3 fwd = forward_of(car->yaw);
@@ -102,7 +96,7 @@ void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car, cons
 	float flong = 0.0f;
 	if (car->shiftTimer <= 0.0f) {
 		if (car->gear != 0 && inRaw->throttle > 0.0f) {
-			flong += engine_torque(def, car->rpm) * ratio * def->drivetrainEff / def->wheelRadius * inRaw->throttle;
+			flong += vehicle_engine_torque(def, car->rpm) * ratio * def->drivetrainEff / def->wheelRadius * inRaw->throttle;
 		} else if (car->gear == 0 && fwdVel > -25.0f) {
 			flong -= def->handbrakeForce * inRaw->brake;
 		}
