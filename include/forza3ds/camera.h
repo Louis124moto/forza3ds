@@ -1,8 +1,8 @@
 #ifndef F3DS_CAMERA_H
 #define F3DS_CAMERA_H
 
+#include "catalog.h"
 #include "input.h"
-#include "vehicle.h"
 
 typedef enum {
 	F3DS_CAM_CHASE = 0,
@@ -13,14 +13,17 @@ typedef struct {
 	F3DSCameraMode mode;
 	float chaseDistance;
 	float chaseHeight;
-	float orbitYaw;
-	float orbitPitch;
 	float recenterSpeed;
+	float orbitYaw;      /* horizontal orbit only: no free vertical movement */
+	bool wasStopped;
+	bool recentering;
 	FVec3 eye;
 	FVec3 target;
 } F3DSCamera;
 
 void camera_init(F3DSCamera *cam);
-void camera_update(F3DSCamera *cam, const F3DSVehicleState *car, const F3DSInputState *in, float dt);
+/* pos/yaw: pose being rendered; speed: absolute car speed in m/s. */
+void camera_update(F3DSCamera *cam, const F3DSCarVisual *car, FVec3 pos, float yaw, float speed,
+	const F3DSInputState *in, float dt);
 
 #endif

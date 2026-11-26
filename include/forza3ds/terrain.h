@@ -1,11 +1,9 @@
-/* Forza3DS - island demo surface features: ramps and low-grip surface zones.
- * Used to exercise the physics (jumps, airborne state, surface grip) while
- * the procedural world (stage 7) is not implemented yet. */
+/* Forza3DS - demo island surface features: ramps and gravel zones. */
 #ifndef F3DS_TERRAIN_H
 #define F3DS_TERRAIN_H
 
-#include "common.h"
 #include "track.h"
+#include "vehicle.h"
 
 #define TERRAIN_RAMP_MAX 6
 #define TERRAIN_SLICK_MAX 8
@@ -31,14 +29,8 @@ typedef struct {
 	int slickCount;
 } F3DSTerrain;
 
-/* Build the fixed demo-island surface features. */
 void terrain_init(F3DSTerrain *t, const F3DSTrack *track);
-
-/* Ground height at a world position (0 outside features). */
 float terrain_height(const F3DSTerrain *t, float x, float z);
-
-/* Lateral grip multiplier at a world position (1.0 = full asphalt grip,
- * lower on gravel/slick zones). */
-float terrain_grip_factor(const F3DSTerrain *t, float x, float z);
+F3DSSurface terrain_surface(const F3DSTerrain *t, const F3DSTrack *track, float x, float z);
 
 #endif

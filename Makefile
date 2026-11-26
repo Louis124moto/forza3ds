@@ -32,6 +32,10 @@ ARCH    :=  -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
 
 CFLAGS  :=  -g -Wall -Wextra -O2 -mword-relocations -ffunction-sections -fdata-sections $(ARCH)
 CFLAGS  +=  $(INCLUDE) -D__3DS__ -std=gnu11
+# make PROFILE=1: log frame timings to sdmc:/3ds/forza3ds/perf.csv
+ifeq ($(PROFILE),1)
+CFLAGS  +=  -DPROFILE
+endif
 CXXFLAGS:=  $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 ASFLAGS :=  -g $(ARCH)
 LDFLAGS =   -specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map) -Wl,--gc-sections

@@ -1,17 +1,21 @@
-/* Forza3DS - Citro3D renderer */
+/* Forza3DS - Citro3D renderer for the top screen (3DS only). */
 #ifndef F3DS_RENDERER_H
 #define F3DS_RENDERER_H
 
-#include <citro3d.h>
-#include "camera.h"
-#include "terrain.h"
-#include "track.h"
-#include "vehicle.h"
+#include "app.h"
 
-void renderer_init(void);
+typedef struct {
+	float cpuMs, gpuMs;      /* last frame, from citro3d */
+	int draws;
+	uint32_t vertices;
+	float cmdBufUsage;       /* 0..1 */
+} F3DSRenderStats;
+
+/* Builds all geometry. Returns false on allocation or GPU failure. */
+bool renderer_init(const F3DSTrack *track, const F3DSTerrain *terrain);
 void renderer_exit(void);
-void renderer_set_track(const F3DSTrack *track, const F3DSTerrain *terrain);
-void renderer_set_garage(bool enabled);
-void renderer_render(const F3DSCamera *cam, const F3DSVehicleState *car);
+/* Waits for the frame slot of the chosen limit (30 or 60) and draws. */
+void renderer_render(const F3DSView *view, int fpsLimit);
+void renderer_stats(F3DSRenderStats *out);
 
 #endif

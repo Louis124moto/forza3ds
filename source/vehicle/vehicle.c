@@ -1,82 +1,129 @@
 #include "vehicle.h"
-#include <math.h>
+#include <string.h>
 
-void vehicle_def_default(F3DSVehicleDef *d)
+void vehicle_state_reset(F3DSVehicleState *s, const F3DSVehicleDef *d, FVec3 pos, float yaw)
 {
-	/* A balanced rear-drive prototype; all dimensions use SI units. */
-	d->mass = 1280.0f;
-	d->wheelRadius = 0.315f;
-	d->wheelBase = 2.62f;
-	d->cgHeight = 0.52f;
-	d->maxSteerAngle = 0.58f;
-	d->steerSpeedDrop = 0.018f;
-	d->drag = 0.42f;
-	d->rollResist = 13.0f;
-	d->brakeForce = 11800.0f;
-	d->handbrakeForce = 3900.0f;
-	d->gripLat = 7.0f;
-	d->gripLatHandbrake = 1.65f;
-	d->yawAuthority = 0.82f;
-	d->springRate = 28000.0f;
-	d->damperCompression = 3200.0f;
-	d->damperRebound = 4100.0f;
-	d->rideHeight = 0.16f;
-	d->tireGrip = 1.0f;
-	d->tireType = F3DS_TIRE_ROAD;
-	d->diffFrontLock = 0.0f;
-	d->diffCenterLock = 0.0f;
-	d->diffRearLock = 0.28f;
-	d->frontTorqueShare = 0.0f;
+	const int model = s->visualModelId;
+	memset(s, 0, sizeof(*s));
+	s->visualModelId = model;
+	s->pos = pos;
+	s->yaw = yaw;
+	s->gear = 1;
+	s->rpm = d->idleRpm;
+	const float front = d->mass * F3DS_GRAVITY * d->weightFront * 0.5f;
+	const float rear = d->mass * F3DS_GRAVITY * (1.0f - d->weightFront) * 0.5f;
+	s->wheelLoad[0] = s->wheelLoad[1] = front;
+	s->wheelLoad[2] = s->wheelLoad[3] = rear;
+}
 
-	d->idleRpm = 850.0f;
-	d->maxRpm = 7200.0f;
-	d->torqueBase = 245.0f;
-	d->torqueFallRpm = 5400.0f;
-	d->turboBoostBar = 0.0f;
-	d->turboInstalled = 0;
-	d->intakeLevel = 0;
-	d->exhaustLevel = 0;
-	d->camshaftLevel = 0;
-	d->injectorLevel = 0;
-	d->pistonLevel = 0;
-	d->cylinders = 4;
-	d->displacementLitres = 2.0f;
-	d->shiftUpRpm = 6500.0f;
-	d->shiftDownRpm = 1900.0f;
-	d->shiftTime = 0.18f;
-	d->gearRatioR = -3.25f;
-	d->finalDrive = 3.73f;
-	d->drivetrainEff = 0.88f;
-	d->gearCount = 6;
-	d->manualTransmission = 0;
-	d->gearRatios[0] = 3.55f;
-	d->gearRatios[1] = 2.18f;
-	d->gearRatios[2] = 1.52f;
-	d->gearRatios[3] = 1.18f;
-	d->gearRatios[4] = 0.92f;
-	d->gearRatios[5] = 0.74f;
+/* Naturally aspirated curve: builds up to the torque peak, then falls away
+ * smoothly. The camshaft moves the peak up; intake and exhaust help most at
+ * high revs. No ceiling is applied to any part level or to the rev limit. */
+float vehicle_torque_boosted(const F3DSVehicleDef *d, float rpm, float boostBar)
+{
+	const float peak = fmaxf(d->torquePeakRpm + d->camshaftLevel * 350.0f, d->idleRpm + 100.0f);
+	float curve;
+	if (rpm <= peak) {
+		const float t = (rpm - d->idleRpm) / (peak - d->idleRpm);
+		const float low = fmaxf(0.35f, 0.72f - d->camshaftLevel * 0.025f);
+		curve = low + (1.0f - low) * smoothstepf(t);
+	} else {
+		const float span = peak * (0.75f + 0.04f * (d->intakeLevel + d->exhaustLevel));
+		const float over = (rpm - peak) / fmaxf(span, 100.0f);
+		curve = 1.0f / (1.0f + 0.55f * over * over);
+	}
+	const float highRev = smoothstepf((rpm - d->idleRpm) / fmaxf(peak - d->idleRpm, 100.0f));
+	const float parts = 1.0f
+		+ d->intakeLevel * (0.025f + 0.030f * highRev)
+		+ d->exhaustLevel * (0.030f + 0.035f * highRev)
+		+ d->camshaftLevel * (0.060f * highRev)
+		+ d->injectorLevel * 0.040f
+		+ d->pistonLevel * 0.055f;
+	const float charge = 1.0f + (d->turboInstalled ? fmaxf(boostBar, 0.0f) * 0.55f : 0.0f);
+	return d->torqueBase * curve * parts * charge;
 }
 
 float vehicle_engine_torque(const F3DSVehicleDef *d, float rpm)
 {
-	const float span = fmaxf(d->maxRpm - d->torqueFallRpm, 1.0f);
-	const float fall = clampf((rpm - d->torqueFallRpm) / span, 0.0f, 1.0f);
-	const float turbo = d->turboInstalled ? 1.0f + fmaxf(d->turboBoostBar, 0.0f) * 0.115f : 1.0f;
-	const float breathing = 1.0f + d->intakeLevel * 0.035f + d->exhaustLevel * 0.045f
-		+ d->camshaftLevel * 0.065f + d->injectorLevel * 0.025f + d->pistonLevel * 0.04f;
-	const float curve = 1.0f - 0.38f * fall;
-	return d->torqueBase * turbo * breathing * curve;
+	return vehicle_torque_boosted(d, rpm, d->turboBoostBar);
 }
 
-float vehicle_sound_pitch(const F3DSVehicleDef *d, float rpm)
+float vehicle_peak_power_kw(const F3DSVehicleDef *d)
 {
-	const float normalized = clampf(rpm / fmaxf(d->maxRpm, 1.0f), 0.0f, 1.5f);
-	const float cylinderFactor = (float)d->cylinders / 4.0f;
-	return 0.65f + normalized * (1.7f + cylinderFactor * 0.22f);
+	float best = 0.0f;
+	const float step = fmaxf((d->maxRpm - d->idleRpm) / 64.0f, 1.0f);
+	for (float rpm = d->idleRpm; rpm <= d->maxRpm; rpm += step) {
+		const float kw = vehicle_engine_torque(d, rpm) * rpm * (2.0f * F3DS_PI / 60.0f) / 1000.0f;
+		best = fmaxf(best, kw);
+	}
+	return best;
 }
 
-float vehicle_sound_timbre(const F3DSVehicleDef *d)
+float tire_surface_grip(F3DSTireType tire, F3DSSurface surface)
 {
-	return clampf(0.18f + d->exhaustLevel * 0.12f + d->intakeLevel * 0.07f + d->pistonLevel * 0.035f
-		+ (d->turboInstalled ? 0.16f : 0.0f), 0.05f, 1.0f);
+	static const float grip[F3DS_TIRE_COUNT][F3DS_SURFACE_COUNT] = {
+		/* asphalt, gravel, grass */
+		{ 1.00f, 0.55f, 0.45f }, /* road */
+		{ 1.12f, 0.50f, 0.40f }, /* sport */
+		{ 1.24f, 0.44f, 0.34f }, /* semi-slick */
+		{ 1.36f, 0.36f, 0.28f }, /* slick */
+		{ 0.94f, 0.80f, 0.62f }, /* rally */
+		{ 0.84f, 0.76f, 0.76f }, /* off-road */
+	};
+	if ((unsigned)tire >= F3DS_TIRE_COUNT) tire = F3DS_TIRE_ROAD;
+	if ((unsigned)surface >= F3DS_SURFACE_COUNT) surface = F3DS_SURFACE_ASPHALT;
+	return grip[tire][surface];
+}
+
+/* Slip angle (rad) at which each tire reaches peak lateral force. */
+float tire_peak_slip(F3DSTireType tire)
+{
+	static const float peak[F3DS_TIRE_COUNT] = { 0.125f, 0.112f, 0.102f, 0.092f, 0.160f, 0.190f };
+	if ((unsigned)tire >= F3DS_TIRE_COUNT) tire = F3DS_TIRE_ROAD;
+	return peak[tire];
+}
+
+const char *tire_name(F3DSTireType tire)
+{
+	static const char *names[F3DS_TIRE_COUNT] = {
+		"Route", "Sport", "Semi-slick", "Slick", "Rallye", "Tout-terrain"
+	};
+	return (unsigned)tire < F3DS_TIRE_COUNT ? names[tire] : "?";
+}
+
+static bool positive(float v) { return isfinite(v) && v > 0.0f; }
+static bool non_negative(float v) { return isfinite(v) && v >= 0.0f; }
+static bool unit(float v) { return isfinite(v) && v >= 0.0f && v <= 1.0f; }
+
+bool vehicle_def_valid(const F3DSVehicleDef *d)
+{
+	if (!positive(d->mass) || !positive(d->wheelRadius) || !positive(d->wheelBase) ||
+	    !positive(d->trackWidth) || !positive(d->cgHeight) || !positive(d->maxSteerAngle) ||
+	    !positive(d->steerRate) ||
+	    !non_negative(d->drag) || !non_negative(d->rollResist) ||
+	    !(d->weightFront > 0.1f && d->weightFront < 0.9f))
+		return false;
+	if (!non_negative(d->brakeForce) || !unit(d->brakeBiasFront) || !non_negative(d->handbrakeForce))
+		return false;
+	for (int a = 0; a < 2; ++a)
+		if (!positive(d->rideHeight[a]) || !positive(d->springRate[a]) ||
+		    !non_negative(d->damperCompression[a]) || !non_negative(d->damperRebound[a]))
+			return false;
+	if ((unsigned)d->tireType >= F3DS_TIRE_COUNT || !positive(d->tireGrip))
+		return false;
+	if (!unit(d->frontTorqueShare) || !unit(d->diffFrontLock) || !unit(d->diffCenterLock) ||
+	    !unit(d->diffRearLock) || !positive(d->finalDrive) || !positive(-d->gearRatioR) ||
+	    !positive(d->drivetrainEff) || !non_negative(d->shiftTime) ||
+	    d->gearCount < 1 || d->gearCount > F3DS_MAX_GEARS ||
+	    (d->manualTransmission != 0 && d->manualTransmission != 1))
+		return false;
+	for (int i = 0; i < F3DS_MAX_GEARS; ++i)
+		if (!positive(d->gearRatios[i])) return false;
+	return positive(d->idleRpm) && isfinite(d->maxRpm) && d->maxRpm > d->idleRpm &&
+		positive(d->torqueBase) && positive(d->torquePeakRpm) &&
+		non_negative(d->turboBoostBar) &&
+		(d->turboInstalled == 0 || d->turboInstalled == 1) &&
+		d->intakeLevel >= 0 && d->exhaustLevel >= 0 && d->camshaftLevel >= 0 &&
+		d->injectorLevel >= 0 && d->pistonLevel >= 0 &&
+		d->cylinders > 0 && positive(d->displacementLitres);
 }

@@ -1,116 +1,127 @@
+/* Buffers are refilled on a dedicated high-priority thread woken by the DSP
+ * frame callback, so audio does not depend on the video frame rate. */
 #include "engine_audio.h"
 #include <3ds.h>
-#include <math.h>
 #include <string.h>
 
-#define ENGINE_RATE 22050
-#define ENGINE_SAMPLES 512
-#define ENGINE_BUFFERS 2
+#define RATE 22050.0f
+#define SAMPLES 368          /* about 16.7 ms */
+#define BUFFERS 4
+#define STACK_SIZE (8 * 1024)
 
-static ndspWaveBuf s_wave[ENGINE_BUFFERS];
-static s16 *s_pcm[ENGINE_BUFFERS];
-static float s_phase;
-static float s_turboPhase;
+static ndspWaveBuf s_wave[BUFFERS];
+static s16 *s_pcm;
+static F3DSSynth s_synth;
+static F3DSSynthParams s_params;
+static LightLock s_lock;
+static LightEvent s_event;
+static Thread s_thread;
+static volatile bool s_quit;
 static bool s_ready;
-static bool s_enabled = true;
 
-static float clamp_audio(float v)
+static void fill_free_buffers(void)
 {
-	if (v < -0.95f) return -0.95f;
-	if (v > 0.95f) return 0.95f;
-	return v;
+	for (int i = 0; i < BUFFERS; ++i) {
+		if (s_wave[i].status != NDSP_WBUF_FREE && s_wave[i].status != NDSP_WBUF_DONE)
+			continue;
+		F3DSSynthParams p;
+		LightLock_Lock(&s_lock);
+		p = s_params;
+		s_params.impact = 0.0f; /* an impact is heard once */
+		LightLock_Unlock(&s_lock);
+		s16 *dst = s_pcm + i * SAMPLES;
+		synth_render(&s_synth, &p, dst, SAMPLES, RATE);
+		DSP_FlushDataCache(dst, SAMPLES * sizeof(s16));
+		ndspChnWaveBufAdd(0, &s_wave[i]);
+	}
+}
+
+static void audio_thread(void *arg)
+{
+	(void)arg;
+	while (!s_quit) {
+		fill_free_buffers();
+		LightEvent_Wait(&s_event);
+	}
+}
+
+static void on_dsp_frame(void *data)
+{
+	(void)data;
+	LightEvent_Signal(&s_event);
 }
 
 bool engine_audio_init(void)
 {
 	if (R_FAILED(ndspInit()))
 		return false;
-	for (int i = 0; i < ENGINE_BUFFERS; ++i) {
-		s_pcm[i] = (s16 *)linearAlloc(sizeof(s16) * ENGINE_SAMPLES);
-		if (!s_pcm[i]) {
-			for (int j = 0; j < i; ++j) linearFree(s_pcm[j]);
-			ndspExit();
-			return false;
-		}
-		memset(&s_wave[i], 0, sizeof(s_wave[i]));
+	s_pcm = linearAlloc(sizeof(s16) * SAMPLES * BUFFERS);
+	if (!s_pcm) {
+		ndspExit();
+		return false;
+	}
+	synth_init(&s_synth);
+	memset(&s_params, 0, sizeof(s_params));
+	memset(s_wave, 0, sizeof(s_wave));
+	for (int i = 0; i < BUFFERS; ++i) {
+		s_wave[i].data_vaddr = s_pcm + i * SAMPLES;
+		s_wave[i].nsamples = SAMPLES;
 	}
 	ndspSetOutputMode(NDSP_OUTPUT_STEREO);
 	ndspChnReset(0);
 	ndspChnSetInterp(0, NDSP_INTERP_LINEAR);
-	ndspChnSetRate(0, ENGINE_RATE);
+	ndspChnSetRate(0, RATE);
 	ndspChnSetFormat(0, NDSP_FORMAT_MONO_PCM16);
-	float mix[12] = { 0.72f, 0.72f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	float mix[12] = { 0.9f, 0.9f };
 	ndspChnSetMix(0, mix);
+
+	LightLock_Init(&s_lock);
+	LightEvent_Init(&s_event, RESET_ONESHOT);
+	s_quit = false;
+	s32 priority = 0x30;
+	svcGetThreadPriority(&priority, CUR_THREAD_HANDLE);
+	s_thread = threadCreate(audio_thread, NULL, STACK_SIZE, priority - 1, -2, false);
+	if (!s_thread) {
+		linearFree(s_pcm);
+		s_pcm = NULL;
+		ndspExit();
+		return false;
+	}
+	ndspSetCallback(on_dsp_frame, NULL);
 	s_ready = true;
 	return true;
 }
 
-static void generate_engine_buffer(const F3DSVehicleDef *def,
-	const F3DSVehicleState *car, s16 *dst)
+void engine_audio_set(const F3DSSynthParams *p)
 {
-	const float rpm = fmaxf(car->rpm, def->idleRpm);
-	const float cylinders = (float)(def->cylinders > 0 ? def->cylinders : 4);
-	const float firingHz = rpm * cylinders / 120.0f;
-	const float pitch = vehicle_sound_pitch(def, rpm);
-	const float timbre = vehicle_sound_timbre(def);
-	const float load = clampf(car->engineLoad, 0.0f, 1.0f);
-	const float amplitude = 0.12f + load * 0.48f;
-	const float turboHz = 520.0f + fmaxf(def->turboBoostBar, 0.0f) * 170.0f;
-	for (int i = 0; i < ENGINE_SAMPLES; ++i) {
-		const float p = s_phase * 6.28318530718f;
-		const float t = s_turboPhase * 6.28318530718f;
-		float sample = sinf(p) * 0.48f;
-		sample += sinf(p * 2.0f) * (0.18f + timbre * 0.15f);
-		sample += sinf(p * 3.0f) * (0.08f + timbre * 0.12f);
-		sample += sinf(p * 4.0f) * (0.035f + load * 0.04f);
-		if (def->turboInstalled)
-			sample += sinf(t) * (0.015f + load * (0.035f + def->turboBoostBar * 0.002f));
-		sample *= amplitude * pitch * 0.45f;
-		sample = clamp_audio(sample);
-		dst[i] = (s16)(sample * 32767.0f);
-		s_phase += firingHz / (float)ENGINE_RATE;
-		s_turboPhase += turboHz / (float)ENGINE_RATE;
-		if (s_phase >= 1.0f) s_phase -= floorf(s_phase);
-		if (s_turboPhase >= 1.0f) s_turboPhase -= floorf(s_turboPhase);
-	}
-}
-
-void engine_audio_update(const F3DSVehicleDef *def, const F3DSVehicleState *car)
-{
-	if (!s_ready || !def || !car)
+	if (!s_ready)
 		return;
-	for (int i = 0; i < ENGINE_BUFFERS; ++i) {
-		if (s_wave[i].status != NDSP_WBUF_FREE && s_wave[i].status != NDSP_WBUF_DONE)
-			continue;
-		if (!s_enabled) {
-			memset(s_pcm[i], 0, sizeof(s16) * ENGINE_SAMPLES);
-		} else {
-			generate_engine_buffer(def, car, s_pcm[i]);
-		}
-		DSP_FlushDataCache(s_pcm[i], sizeof(s16) * ENGINE_SAMPLES);
-		memset(&s_wave[i], 0, sizeof(s_wave[i]));
-		s_wave[i].data_vaddr = s_pcm[i];
-		s_wave[i].nsamples = ENGINE_SAMPLES;
-		s_wave[i].looping = false;
-		ndspChnWaveBufAdd(0, &s_wave[i]);
-	}
+	LightLock_Lock(&s_lock);
+	const float pending = s_params.impact;
+	s_params = *p;
+	s_params.impact = fmaxf(p->impact, pending);
+	LightLock_Unlock(&s_lock);
 }
 
-void engine_audio_set_enabled(bool enabled)
+void engine_audio_pause(bool paused)
 {
-	s_enabled = enabled;
+	if (s_ready)
+		ndspChnSetPaused(0, paused);
 }
 
 void engine_audio_exit(void)
 {
 	if (!s_ready)
 		return;
+	ndspSetCallback(NULL, NULL);
+	s_quit = true;
+	LightEvent_Signal(&s_event);
+	threadJoin(s_thread, U64_MAX);
+	threadFree(s_thread);
 	ndspChnWaveBufClear(0);
 	ndspChnReset(0);
-	for (int i = 0; i < ENGINE_BUFFERS; ++i) {
-		if (s_pcm[i]) linearFree(s_pcm[i]);
-		s_pcm[i] = NULL;
-	}
+	linearFree(s_pcm);
+	s_pcm = NULL;
 	ndspExit();
 	s_ready = false;
 }

@@ -1,56 +1,60 @@
 #include "camera.h"
+#include <string.h>
+
+#define ORBIT_RATE 2.4f      /* rad/s at full C-stick deflection */
+#define STOPPED_SPEED 0.6f
 
 void camera_init(F3DSCamera *cam)
 {
+	memset(cam, 0, sizeof(*cam));
 	cam->mode = F3DS_CAM_CHASE;
 	cam->chaseDistance = 7.5f;
-	cam->chaseHeight = 3.2f;
-	cam->orbitYaw = 0.0f;
-	cam->orbitPitch = 0.35f;
+	cam->chaseHeight = 2.8f;
 	cam->recenterSpeed = 2.5f;
+	cam->wasStopped = true;
 	cam->eye = fvec3(0.0f, 5.0f, -10.0f);
-	cam->target = fvec3(0.0f, 0.0f, 0.0f);
 }
 
-void camera_update(F3DSCamera *cam, const F3DSVehicleState *car, const F3DSInputState *in, float dt)
+void camera_update(F3DSCamera *cam, const F3DSCarVisual *car, FVec3 pos, float yaw, float speed,
+	const F3DSInputState *in, float dt)
 {
-	/* One-shot actions */
 	if (in->toggleView)
-		cam->mode = (cam->mode == F3DS_CAM_CHASE) ? F3DS_CAM_COCKPIT : F3DS_CAM_CHASE;
+		cam->mode = cam->mode == F3DS_CAM_CHASE ? F3DS_CAM_COCKPIT : F3DS_CAM_CHASE;
+	cam->chaseDistance = clampf(cam->chaseDistance + in->camDistance * 5.0f * dt, 3.0f, 20.0f);
+	cam->chaseHeight = clampf(cam->chaseHeight + in->camHeight * 2.5f * dt, 1.0f, 12.0f);
 
-	/* Adjustable distance (D-pad up/down) and height (D-pad left/right). */
-	if (in->camDistanceDown)
-		cam->chaseDistance = clampf(cam->chaseDistance + 10.0f * dt, 3.0f, 20.0f);
-	if (in->camDistanceUp)
-		cam->chaseDistance = clampf(cam->chaseDistance - 10.0f * dt, 3.0f, 20.0f);
-	if (in->camHeightUp)
-		cam->chaseHeight = clampf(cam->chaseHeight + 6.0f * dt, 1.0f, 12.0f);
-	if (in->camHeightDown)
-		cam->chaseHeight = clampf(cam->chaseHeight - 6.0f * dt, 1.0f, 12.0f);
-
-	/* C-stick orbit. */
-	cam->orbitYaw -= in->orbitYaw * 12.0f * dt;
-	cam->orbitPitch = clampf(cam->orbitPitch + in->orbitPitch * 8.0f * dt, -0.15f, 1.1f);
-
-	/* Automatic recentering after C-stick release; no free vertical movement. */
-	if (fabsf(in->orbitYaw) <= 0.02f) {
-		const float speed = clampf(cam->recenterSpeed * dt, 0.0f, 1.0f);
-		cam->orbitYaw -= cam->orbitYaw * speed * 1.5f;
-		cam->orbitPitch = approachf(cam->orbitPitch, 0.35f, cam->recenterSpeed * dt * 0.25f);
+	/* C-stick orbit. Recentring starts when the stick is released while
+	 * driving, or when the car sets off again after a stop; a stationary car
+	 * keeps the chosen angle for inspection. */
+	const bool stopped = fabsf(speed) < STOPPED_SPEED;
+	const bool restarting = cam->wasStopped && !stopped;
+	cam->wasStopped = stopped;
+	if (fabsf(in->orbit) > 0.02f) {
+		cam->orbitYaw = wrap_angle(cam->orbitYaw - in->orbit * ORBIT_RATE * dt);
+		cam->recentering = !stopped;
+	} else {
+		if (!stopped || restarting)
+			cam->recentering = true;
+		if (cam->recentering) {
+			cam->orbitYaw -= cam->orbitYaw * clampf(cam->recenterSpeed * dt, 0.0f, 1.0f);
+			if (fabsf(cam->orbitYaw) < 0.002f) {
+				cam->orbitYaw = 0.0f;
+				cam->recentering = false;
+			}
+		}
 	}
 
-	const FVec3 fwd = fvec3(sinf(car->yaw), 0.0f, cosf(car->yaw));
-
+	const FVec3 f = yaw_forward(yaw), l = yaw_left(yaw);
 	if (cam->mode == F3DS_CAM_CHASE) {
-		const float a = car->yaw + F3DS_PI + cam->orbitYaw;
-		const float horiz = cosf(cam->orbitPitch) * cam->chaseDistance;
-		const float vert = cam->chaseHeight + sinf(cam->orbitPitch) * cam->chaseDistance * 0.6f;
-		cam->eye = fvec3(car->pos.x + sinf(a) * horiz, car->pos.y + vert, car->pos.z + cosf(a) * horiz);
-		cam->target = fvec3(car->pos.x + fwd.x * 3.0f, car->pos.y + 1.0f, car->pos.z + fwd.z * 3.0f);
+		const float a = yaw + F3DS_PI + cam->orbitYaw;
+		cam->eye = fvec3(pos.x + sinf(a) * cam->chaseDistance, pos.y + cam->chaseHeight,
+			pos.z + cosf(a) * cam->chaseDistance);
+		const float ahead = 2.5f * cosf(cam->orbitYaw);
+		cam->target = fvec3(pos.x + f.x * ahead, pos.y + 0.9f, pos.z + f.z * ahead);
 	} else {
-		/* Cockpit: fixed standard position; dashboard drawn in cockpit view. */
-		const FVec3 seat = fvec3(car->pos.x + fwd.x * 0.15f, car->pos.y + 1.05f, car->pos.z + fwd.z * 0.15f);
-		cam->eye = seat;
-		cam->target = fvec3(seat.x + fwd.x * 10.0f, seat.y - 0.3f, seat.z + fwd.z * 10.0f);
+		/* Cockpit: fixed standard position at the driver's eyes. */
+		cam->eye = fvec3(pos.x + f.x * car->eyeZ + l.x * car->seatX, pos.y + car->eyeY,
+			pos.z + f.z * car->eyeZ + l.z * car->seatX);
+		cam->target = fvec3(cam->eye.x + f.x * 10.0f, cam->eye.y - 1.1f, cam->eye.z + f.z * 10.0f);
 	}
 }
