@@ -1,19 +1,23 @@
-/* Vehicle dynamics: longitudinal powertrain, tire-limited forces, lateral slip,
- * differential influence and a compact sprung-mass approximation. */
+/* Forza3DS - vehicle physics.
+ * Planar model with longitudinal forces, inertia-limited steering, lateral
+ * grip with slide/oversteer, gearbox, plus vertical dynamics over terrain
+ * ramps (gravity, airborne state) and per-surface grip factors.
+ */
 #include "physics.h"
 #include <string.h>
 
-#define F3DS_GRAVITY 9.81f
+#define F3DS_GRAVITY 24.0f /* slightly arcade-tuned gravity, m/s^2 */
 
 static FVec3 forward_of(float yaw)
 {
 	return fvec3(sinf(yaw), 0.0f, cosf(yaw));
 }
 
-void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car,
-	const F3DSInputState *inRaw, const F3DSTerrain *terrain, float dt)
+void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car, const F3DSInputState *inRaw, const F3DSTerrain *terrain, float dt)
 {
 	const FVec3 fwd = forward_of(car->yaw);
+
+	/* While airborne there is no drive, brake or grip authority. */
 	F3DSInputState inZeroed;
 	if (car->airborne) {
 		inZeroed = *inRaw;
@@ -23,21 +27,22 @@ void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car,
 		inRaw = &inZeroed;
 	}
 
-	const float surfaceGrip = car->airborne ? 0.0f :
-		terrain_grip_factor(terrain, car->pos.x, car->pos.z);
-	const float tireGrip = fmaxf(def->tireGrip, 0.05f);
+	/* Surface grip (gravel zones etc). */
+	const float gripFactor = car->airborne ? 0.0f : terrain_grip_factor(terrain, car->pos.x, car->pos.z);
+
 	float fwdVel = car->vx * fwd.x + car->vz * fwd.z;
 	FVec3 latWorld = fvec3_sub(fvec3(car->vx, 0.0f, car->vz), fvec3_scale(fwd, fwdVel));
 
-	/* Steering angle has finite response and loses authority as speed rises. */
-	const float speedFactor = 1.0f - clampf(fabsf(fwdVel) * def->steerSpeedDrop, 0.0f, 0.62f);
+	/* --- Steering: progressive with inertia, reduced authority at speed. */
+	const float speedFactor = 1.0f - clampf(fabsf(fwdVel) * def->steerSpeedDrop, 0.0f, 0.6f);
 	const float steerTarget = inRaw->steer * def->maxSteerAngle * speedFactor;
-	car->steerAngle = approachf(car->steerAngle, steerTarget, 3.8f * dt);
+	const float steerRate = 4.0f * dt;
+	car->steerAngle = approachf(car->steerAngle, steerTarget, steerRate);
 
+	/* --- Powertrain: automatic gearbox + explicit reverse gear. */
 	if (car->shiftTimer > 0.0f)
-		car->shiftTimer = fmaxf(0.0f, car->shiftTimer - dt);
+		car->shiftTimer -= dt;
 
-	/* Automatic transmission; zero is reverse. Gear count is tunable in the workshop. */
 	if (inRaw->brake > 0.0f && fwdVel < 0.5f && car->gear != 0) {
 		car->gear = 0;
 		car->shiftTimer = def->shiftTime;
@@ -50,7 +55,7 @@ void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car,
 	if (gearCount < 1) gearCount = 1;
 	if (gearCount > F3DS_GEARS) gearCount = F3DS_GEARS;
 	float ratio = 0.0f;
-	if (car->gear > 0) {
+	if (car->gear != 0) {
 		if (car->gear > gearCount) car->gear = gearCount;
 		if (car->shiftTimer <= 0.0f) {
 			if (def->manualTransmission) {
@@ -70,65 +75,45 @@ void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car,
 			}
 		}
 		ratio = def->gearRatios[car->gear - 1] * def->finalDrive;
+	} else if (fwdVel < -0.2f) {
+		const float reverseRatio = def->gearRatioR * def->finalDrive;
+		car->rpm = clampf(-fwdVel / def->wheelRadius * reverseRatio * 30.0f / F3DS_PI, def->idleRpm, def->maxRpm);
 	}
 
-	if (car->gear > 0) {
-		const float wheelRpm = fabsf(fwdVel) / fmaxf(def->wheelRadius, 0.05f) * 60.0f / (2.0f * F3DS_PI);
-		float targetRpm = wheelRpm * ratio;
+	if (car->gear != 0) {
+		const float wheelRpm = fabsf(fwdVel) / def->wheelRadius * 60.0f / (2.0f * F3DS_PI);
+		float target = wheelRpm * ratio;
 		if (inRaw->throttle > 0.0f && fwdVel < 0.5f)
-			targetRpm = def->idleRpm + inRaw->throttle * (def->maxRpm - def->idleRpm) * 0.28f;
-		targetRpm = clampf(targetRpm, def->idleRpm, fmaxf(def->maxRpm, def->idleRpm + 100.0f));
-		car->rpm = approachf(car->rpm, targetRpm, 11000.0f * dt);
+			target = def->maxRpm * 0.25f;
+		target = clampf(target, def->idleRpm, def->maxRpm);
+		car->rpm = approachf(car->rpm, target, 12000.0f * dt);
 	} else if (fwdVel >= -0.2f) {
-		const float targetRpm = def->idleRpm + inRaw->throttle *
-			(fmaxf(def->maxRpm, def->idleRpm + 100.0f) - def->idleRpm) * 0.28f;
-		car->rpm = approachf(car->rpm, targetRpm, 7600.0f * dt);
+		const float target = clampf(def->idleRpm + inRaw->throttle * def->maxRpm * 0.25f, def->idleRpm, def->maxRpm);
+		car->rpm = approachf(car->rpm, target, 8000.0f * dt);
 	}
-	car->rpm = clampf(car->rpm, def->idleRpm, fmaxf(def->maxRpm, def->idleRpm + 100.0f));
 	car->throttle = inRaw->throttle;
 	car->engineLoad = clampf(inRaw->throttle + fabsf(fwdVel) * def->drag * 0.0007f, 0.0f, 1.0f);
 
-	/* Engine parts, boost and gear ratios feed directly into wheel force. */
-	float longitudinalForce = 0.0f;
-	if (car->shiftTimer <= 0.0f && car->gear > 0 && inRaw->throttle > 0.0f) {
-		const float wheelForce = vehicle_engine_torque(def, car->rpm) * ratio *
-			def->drivetrainEff / fmaxf(def->wheelRadius, 0.05f) * inRaw->throttle;
-		const float split = clampf(def->frontTorqueShare, 0.0f, 1.0f);
-		const float driveShare = 1.0f - fabsf(split - 0.5f) * 0.16f;
-		const float diffEffect = 1.0f + 0.12f * def->diffRearLock +
-			0.08f * def->diffCenterLock + 0.04f * def->diffFrontLock;
-		const float tractionLimit = def->mass * F3DS_GRAVITY * tireGrip *
-			(0.72f + 0.18f * surfaceGrip) * diffEffect * driveShare;
-		longitudinalForce += fminf(wheelForce, tractionLimit);
+	/* Longitudinal forces. */
+	float flong = 0.0f;
+	if (car->shiftTimer <= 0.0f) {
+		if (car->gear != 0 && inRaw->throttle > 0.0f) {
+			flong += vehicle_engine_torque(def, car->rpm) * ratio * def->drivetrainEff / def->wheelRadius * inRaw->throttle;
+		} else if (car->gear == 0 && fwdVel > -25.0f) {
+			flong -= def->handbrakeForce * inRaw->brake;
+		}
 	}
-	if (car->gear > 0)
-		longitudinalForce -= def->brakeForce * inRaw->brake * (fwdVel > 0.0f ? 1.0f : 0.0f);
-	else if (fwdVel > -25.0f)
-		longitudinalForce -= def->handbrakeForce * inRaw->brake;
+	if (car->gear != 0)
+		flong -= def->brakeForce * inRaw->brake * (fwdVel > 0.0f ? 1.0f : 0.0f);
 	if (inRaw->handbrake && fabsf(fwdVel) > 0.1f)
-		longitudinalForce -= def->handbrakeForce * (fwdVel > 0.0f ? 1.0f : -1.0f);
-	longitudinalForce -= def->drag * fwdVel * fabsf(fwdVel) + def->rollResist *
-		(car->airborne ? 0.0f : 1.0f) * fwdVel;
-	fwdVel += (longitudinalForce / fmaxf(def->mass, 1.0f)) * dt;
-	if (fabsf(fwdVel) < 0.04f && inRaw->throttle < 0.01f)
+		flong -= def->handbrakeForce * (fwdVel > 0.0f ? 1.0f : -1.0f);
+	flong -= def->drag * fwdVel * fabsf(fwdVel) + def->rollResist * (car->airborne ? 0.0f : 1.0f) * fwdVel;
+
+	fwdVel += (flong / def->mass) * dt;
+	if (fabsf(fwdVel) < 0.05f && inRaw->throttle < 0.01f)
 		fwdVel = 0.0f;
 
-	/* Sprung-mass roll approximation: spring rate and damping affect lateral grip. */
-	const float lateralAcceleration = car->yawRate * fwdVel;
-	const float spring = fmaxf(def->springRate, 1000.0f);
-	const float cgLever = fmaxf(def->cgHeight + def->rideHeight, 0.1f);
-	const float targetTravel = clampf(def->mass * lateralAcceleration / spring * cgLever * 0.34f, -0.16f, 0.16f);
-	const float damping = targetTravel > car->suspensionTravel ?
-		fmaxf(def->damperCompression, 0.0f) : fmaxf(def->damperRebound, 0.0f);
-	const float suspensionRate = spring / fmaxf(def->mass, 1.0f) +
-		damping / fmaxf(def->mass, 1.0f);
-	car->suspensionTravel = approachf(car->suspensionTravel, targetTravel,
-		fmaxf(0.02f, suspensionRate * dt * 0.12f));
-	const float suspensionGrip = clampf(1.0f - fabsf(car->suspensionTravel) * 1.8f, 0.68f, 1.0f);
-
-	/* Bicycle-model yaw dynamics. Steering changes heading, not merely world X/Z.
-	 * The target follows v/L*tan(delta); a bounded response models tire/chassis
-	 * yaw inertia without the previous very weak low-speed steering response. */
+	/* Bicycle-model yaw response from Claude's steering correction. */
 	const float diffYaw = clampf(1.0f + 0.10f * def->diffRearLock -
 		0.06f * def->diffFrontLock, 0.75f, 1.20f);
 	const float speedForSteering = fabsf(fwdVel);
@@ -152,53 +137,61 @@ void physics_vehicle_step(const F3DSVehicleDef *def, F3DSVehicleState *car,
 	if (car->yaw > F3DS_PI) car->yaw -= 2.0f * F3DS_PI;
 	else if (car->yaw < -F3DS_PI) car->yaw += 2.0f * F3DS_PI;
 
-	const float centerDiffGrip = 1.0f - 0.12f * def->diffCenterLock;
-	const float gripK = (inRaw->handbrake ? def->gripLatHandbrake : def->gripLat) *
-		tireGrip * suspensionGrip * centerDiffGrip * (0.25f + 0.75f * surfaceGrip);
+	/* --- Lateral grip with surface factor. */
+	const float gripK = (inRaw->handbrake ? def->gripLatHandbrake : def->gripLat) * (0.3f + 0.7f * gripFactor);
 	const float latLen = fvec3_len(latWorld);
 	if (latLen > 1e-4f && gripK > 0.01f) {
-		latWorld = fvec3_scale(latWorld, expf(-gripK * dt));
-		const float maxLat = fabsf(car->yawRate * fwdVel) * 0.85f + 0.35f;
+		const float decay = expf(-gripK * dt);
+		latWorld = fvec3_scale(latWorld, decay);
+		const float maxLat = fabsf(car->yawRate * fwdVel) * 0.8f + 0.5f;
 		const float newLen = fvec3_len(latWorld);
 		if (newLen > maxLat)
 			latWorld = fvec3_scale(latWorld, maxLat / newLen);
+	} else if (gripK <= 0.01f) {
+		/* airborne / ice: lateral velocity persists (free slide). */
 	}
 
-	const FVec3 newForward = forward_of(car->yaw);
-	car->vx = newForward.x * fwdVel + latWorld.x;
-	car->vz = newForward.z * fwdVel + latWorld.z;
+	const FVec3 nfwd = forward_of(car->yaw);
+	car->vx = nfwd.x * fwdVel + latWorld.x;
+	car->vz = nfwd.z * fwdVel + latWorld.z;
 	car->speed = fwdVel;
+
 	car->pos.x += car->vx * dt;
 	car->pos.z += car->vz * dt;
 }
 
 void physics_step(const F3DSVehicleDef *def, F3DSVehicleState *car, const F3DSInputState *in,
-	const F3DSTrack *track, const F3DSTerrain *terrain, float dt)
+		  const F3DSTrack *track, const F3DSTerrain *terrain, float dt)
 {
 	physics_vehicle_step(def, car, in, terrain, dt);
 	track_resolve_collision(track, &car->pos, &car->vx, &car->vz);
 
+	/* --- Vertical dynamics over terrain ramps. */
 	const float ground = terrain_height(terrain, car->pos.x, car->pos.z);
 	if (car->airborne) {
 		car->vy -= F3DS_GRAVITY * dt;
 		car->pos.y += car->vy * dt;
 		if (car->pos.y <= ground) {
 			car->pos.y = ground;
+			/* Landing scrub proportional to impact speed. */
 			const float impact = -car->vy;
 			car->vy = 0.0f;
 			car->airborne = false;
-			const float scrub = clampf(1.0f - impact * 0.025f, 0.55f, 1.0f);
+			const float scrub = clampf(1.0f - impact * 0.03f, 0.6f, 1.0f);
 			car->vx *= scrub;
 			car->vz *= scrub;
 		}
 	} else {
-		const float dy = ground - car->pos.y;
+		const float g = ground;
+		const float dy = g - car->pos.y;
 		if (dy < -0.4f) {
+			/* Ground vanished below us (drove off the ramp edge):
+			 * keep the climb velocity and go airborne. */
 			car->airborne = true;
 			car->pos.y += car->vy * dt;
 		} else {
 			car->vy = dy / dt;
-			car->pos.y = ground;
+			car->pos.y = g;
 		}
 	}
 }
