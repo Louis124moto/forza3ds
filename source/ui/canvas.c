@@ -78,6 +78,8 @@ int canvas_text(F3DSCanvas *c, int x, int y, int scale, uint16_t color, const ch
 	const int start = x;
 	while (*text) {
 		const int g = next_glyph(&text);
+		if (x + 8 * scale > CANVAS_W)
+			c->clipped++;
 		if (c->font) {
 			const uint8_t *rows = c->font + g * 8;
 			for (int row = 0; row < 8; ++row)

@@ -12,6 +12,7 @@
 typedef struct {
 	uint16_t *px;          /* CANVAS_PIXELS entries */
 	const uint8_t *font;   /* 256 glyphs, 8x8, CP437, one byte per row */
+	int clipped;           /* characters that did not fit the screen width */
 } F3DSCanvas;
 
 #define RGB565C(r, g, b) ((uint16_t)((((r) >> 3) << 11) | (((g) >> 2) << 5) | ((b) >> 3)))
