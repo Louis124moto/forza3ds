@@ -15,6 +15,7 @@ on:
     paths:
       - "source/**"
       - "include/**"
+      - "tests/**"
       - "Makefile"
       - "README.md"
       - "docs/**"
@@ -80,14 +81,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Compile deterministic engine tests
-        run: |
-          cc -std=c11 -Wall -Wextra -Werror \
-            -Itests -Iinclude/forza3ds \
-            tests/test_engine.c \
-            source/core/core.c source/physics/physics.c \
-            source/world/track.c source/world/terrain.c \
-            source/vehicle/vehicle.c \
-            -lm -o "$RUNNER_TEMP/forza3ds-tests"
-      - name: Run deterministic engine tests
-        run: "$RUNNER_TEMP/forza3ds-tests"
+      - name: Fetch Citro3D (maths library used by the tests)
+        run: git clone --depth 1 https://github.com/devkitPro/citro3d.git "$RUNNER_TEMP/citro3d"
+      - name: Run deterministic host tests
+        run: CITRO3D_DIR="$RUNNER_TEMP/citro3d" tests/run.sh

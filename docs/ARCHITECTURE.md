@@ -2,62 +2,64 @@
 
 ## Target
 
-Native New Nintendo 3DS application using devkitARM, libctru and Citro3D. The game is written in C. The first milestone is a small, measurable driving prototype, not the complete open world.
+Native New Nintendo 3DS application written in C (gnu11) with devkitARM, libctru and Citro3D.
 
-## Runtime modules
+## Layers
 
-Planned module boundaries:
+Everything except the files marked **3DS** is portable and runs in the host tests.
 
-- core/: application lifecycle, timing, configuration and common utilities.
-- input/: New 3DS controls and configurable bindings.
-- render/: Citro3D state, cameras, meshes, materials and scene submission.
-- physics/: deterministic vehicle simulation and collision queries.
-- vehicle/: vehicle definitions, visual model references and mechanical setup.
-- world/: logical island representation, sectors and streaming.
-- generation/: deterministic seeded terrain, biome, road and settlement generation.
-- assets/: OBJ/MTL parsing, validation, conversion and cache management.
-- ui/: menus, model browser, garage and lower-screen HUD.
-- audio/: engine and environmental audio.
-- save/: versioned save/load and integrity checks.
+| Module | Files | Role |
+|---|---|---|
+| core | `core/core.c`, `core/app.c`, `core/platform.c` (3DS) | Fixed-step clock, screens and game flow, console check |
+| input | `input/input.c`, `input/input_hw.c` (3DS) | Bindings, dead zone, sensitivity |
+| vehicle | `vehicle/vehicle.c`, `vehicle/catalog.c` | Mechanical definition and runtime state; catalogue and visual dimensions |
+| physics | `physics/physics.c`, `physics/collision.c` | Two-axle tyre-force model, ramps, collisions |
+| world | `world/track.c`, `world/terrain.c` | Demo road, obstacles, trees, ramps, gravel |
+| render | `render/camera.c`, `meshes.c`, `scene.c`, `renderer.c` (3DS), `vshader.v.pica` | Meshes built once at start, per-frame draw list, Citro3D submission |
+| ui | `ui/workshop.c`, `canvas.c`, `screens.c` | Workshop items and software-drawn lower screen |
+| audio | `audio/synth.c`, `audio/engine_audio.c` (3DS) | Procedural sound; NDSP streaming |
+| save | `save/save_io.c`, `settings.c`, `garage.c` | Checksummed, versioned, atomic files with backup |
 
-These are planned boundaries. The current bootstrap only initializes libctru's graphics console.
+`source/main.c` (3DS) only connects the hardware to the application.
+The `generation/` and `assets/` modules of the roadmap do not exist yet.
 
-## Coordinate and simulation conventions
+## Frame
 
-Before implementing physics, define one world-unit scale, one coordinate convention, angle units and the mapping between simulation coordinates and Citro3D. Keep physics state independent from render transforms. Use a fixed simulation timestep with an accumulator, then cap catch-up work to avoid an unbounded frame.
+1. Read input, then `app_update`: menus, and while driving a fixed simulation step
+   (60 Hz, or 120 Hz in the precise profile) with a bounded catch-up.
+   Physics subdivides each step to at most 1/240 s.
+2. `app_view` produces an interpolated description of what to show.
+3. `scene_build` culls road chunks and produces at most 128 draws; `renderer.c` submits them.
+4. The lower screen is redrawn when the UI changes, and about 30 times a second while driving.
 
 ## Vehicle separation
 
-A vehicle has three distinct data groups:
+- Visual data (`F3DSCarVisual`): dimensions used to build meshes and place cameras.
+- Physical definition (`F3DSVehicleDef`): everything the simulation reads; edited by the workshop.
+- Runtime state (`F3DSVehicleState`): pose, velocities, engine, suspension.
 
-1. Visual asset reference: mesh, materials, textures and visual attachment points.
-2. Physical definition: mass, inertia, center of gravity, wheelbase, track width, suspension and tire parameters.
-3. Runtime state: position, orientation, velocities, wheel state, engine state and damage.
+## Data on the SD card
 
-Replacing an OBJ changes the visual asset reference only. Physical values remain attached to the vehicle definition unless the user explicitly selects a different vehicle setup. A model package must provide scale/origin and wheel attachment metadata; a visual mesh alone is not a physics definition.
+`sdmc:/3ds/forza3ds/settings.bin` is saved automatically.
+`sdmc:/3ds/forza3ds/saves/free_garage.bin` (Mode Libre) is saved only on request.
+Each file has a magic number, version, size and CRC-32; it is written to a temporary file
+then renamed, and the previous good version is kept as `.bak`.
+Progression saves will use separate files.
 
-## Procedural world and memory
+## Tests and tools
 
-The full island exists as deterministic logical data derived from a world seed and generator version. Only nearby sectors are converted to renderable geometry and resident in memory. Sector identities and generation order must not depend on frame timing or traversal order.
+- `tests/run.sh`: host tests with address and undefined-behaviour sanitizers.
+- `tools/preview.sh`: renders both screens to images with a software rasteriser. It checks
+  geometry and layout; it does not replace the console or an emulator.
+- `make PROFILE=1`: logs one line of timings per second to `sdmc:/3ds/forza3ds/perf.csv`.
 
-Use separate deterministic sub-seeds for terrain, biomes, road graph, settlements, buildings and decorative details. A generator change that alters the world requires a new generator version or a compatibility path for old saves.
+## Planned: procedural world
 
-## OBJ import pipeline
+The full island will be deterministic logical data derived from a seed and a generator
+version, with only nearby sectors converted to geometry. Sub-seeds stay separate for
+terrain, biomes, roads, settlements, buildings and details.
 
-1. Discover model packages under sdmc:/3ds/forza3ds/models/.
-2. Read and validate OBJ/MTL source files with strict size and count limits.
-3. Resolve indices and triangulate polygon faces.
-4. Convert coordinates, normals and UVs to the engine convention.
-5. Build Citro3D-ready vertex/index data.
-6. Write a versioned cache under sdmc:/3ds/forza3ds/cache/models/.
-7. Let the model browser preview and assign the visual asset to a vehicle.
+## Planned: OBJ import
 
-Never trust paths or numeric values from external model files. Reject path traversal, malformed indices, NaN/infinite values, unsupported directives and allocations above configured limits. Cache data must be revalidated before loading.
-
-## Save data
-
-Store a schema version, generator version, world seed and generation settings, player state, garage and vehicle setup, visual model assignments, currency, event records, discoveries and user settings. Procedurally derivable immutable world data should be regenerated; persist all non-derivable state. Use temporary files and a safe replacement strategy so a failed save does not destroy the last valid save.
-
-## Performance policy
-
-New 3DS hardware is the authority for performance decisions. Establish measured budgets before choosing final world scale, mesh limits, texture sizes, sector radius or AI count. The 30 FPS target is a goal, not a guarantee. Keep profiling counters for frame time, simulation time, draw submission, visible sectors and memory use.
+See [ASSET_PIPELINE.md](ASSET_PIPELINE.md). External files must be validated (sizes,
+indices, finite numbers, paths); imported geometry never changes vehicle physics.

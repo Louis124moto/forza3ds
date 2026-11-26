@@ -1,97 +1,89 @@
 # Forza3DS
 
-Native 3D driving-game prototype for **New Nintendo 3DS / New Nintendo 3DS XL**, written in C with devkitARM, libctru and Citro3D.
+Native 3D driving-game demo for **New Nintendo 3DS / New Nintendo 3DS XL**, written in C
+with devkitARM, libctru and Citro3D.
 
-## Current implementation state
+> **Not yet validated on a physical console.** The game logic is covered by host tests and
+> the 3DSX builds, but display, sound, controls and performance still have to be checked on
+> a real New 3DS (checklist below).
 
-The code now contains an integrated **Mode Libre → vehicle → 3D garage/workshop → driving** path. The current main-branch revision passes both the devkitARM/libctru/Citro3D 3DSX build and deterministic host tests; it still has not been validated on a physical New 3DS.
+## What is implemented
 
-Implemented in source:
+- Main menu: Mode Libre, Mode Progression (information screen only), settings, quit.
+- Four cars (rear-wheel coupé, turbo 4x4, small front-wheel hatchback, V8), all available.
+- 3D garage and workshop: engine and parts, turbo, rev limit, gearbox (up to 10 gears),
+  three differentials, suspension per axle, six tyre types, brakes, paint and rim colour.
+  Changes apply immediately to physics and sound; no tuning ceiling on boost or revs.
+- Driving: tyre-force model with load transfer, asphalt / gravel / grass, handbrake,
+  automatic or manual gearbox, optional ABS and traction control.
+- Demo road with barriers, posts, crates, trees, torii gates, ramps and gravel zones.
+- Chase camera (C-stick orbit, adjustable distance and height) and cockpit camera with
+  steering wheel and dials.
+- Lower screen: speed, rev gauge, gear, boost, surface, aid lamps, map.
+- Procedural engine, wind and tyre sound; muffled in the cockpit; separate volumes.
+- Settings (bindings, camera, aids, simulation rate, 30/60 FPS limit, FPS counter, HUD,
+  draw distance, shadows, volumes) saved automatically; Mode Libre garage saved on request.
+- Pause, and automatic pause when the lid is closed or HOME is pressed.
 
-- Main menu with Mode Libre, Mode Progression information and exit.
-- Bottom-screen menu layout with RGB565-rendered panels, highlighted selection rows and a dark/cyan visual theme; labels remain rendered with libctru's font.
-- Mode Libre vehicle selection. The current in-game catalogue contains one prototype car; the menu does not claim that a larger catalogue exists.
-- A low-poly 3D inspection garage used by the vehicle and workshop screens, rendered on the top screen through Citro3D.
-- Citro3D owns top-screen presentation: no second manual `gfxSwapBuffers` is performed after `C3D_FrameEnd`, avoiding the extra swap that previously replaced the rendered scene with the clear-color frame.
-- Mechanical workshop pages for engine, turbo, intake, exhaust, camshaft, injectors, pistons, RPM, gearbox, differentials, suspension and tires.
-- Automatic/manual gearbox selection. In manual mode, L/R request down/up shifts.
-- Vehicle parameters are passed directly into the driving simulation: engine torque and boost, gear ratios/final drive, tire grip, differential settings, and suspension spring/damper/ride-height values.
-- Procedural engine audio generated through libctru NDSP. RPM, engine load, cylinder count, exhaust/intake/piston settings and turbo configuration affect the generated sound.
-- Pause navigation back to the workshop, vehicle selection or main menu.
-- Existing chase/cockpit camera, Circle Pad steering configuration, button remapping, FPS limiter, HUD toggle and settings file remain available.
-
-The vehicle model is still a compact real-time approximation rather than a complete multi-body simulation. Its suspension is a simplified sprung-mass/roll approximation, and the current prototype is not a validated physical vehicle model.
-
-## Default controls
+## Controls (default)
 
 | Control | Action |
 |---|---|
 | Circle Pad | Steering |
-| A | Accelerator |
+| A | Accelerator (hold B at rest to reverse in automatic) |
 | B | Brake |
 | Y | Handbrake |
-| L / R | Downshift / upshift in manual mode |
+| L / R | Downshift / upshift (manual gearbox) |
 | C-stick | Camera orbit |
-| X | Toggle chase/cockpit camera |
-| D-pad | Adjust chase camera while driving |
-| START | Pause / resume |
-| SELECT | Exit |
+| X | Chase / cockpit view |
+| SELECT | Map |
+| START | Pause |
+| R (garage) | Rev the engine |
 
-Accelerator, brake, handbrake and camera-view buttons can be reassigned in the pause menu. START and SELECT remain reserved.
+Driving buttons can be reassigned in the settings. In menus: D-pad or Circle Pad to move,
+left/right to adjust, A to confirm, B to go back.
 
-## Validation status and limitations
+## Build
 
-**Do not treat this iteration as finished yet.** The latest GitHub Actions run completed successfully for both the native 3DSX build and host tests. A successful compile does not prove that the graphics are displayed correctly on a physical console.
+Install devkitPro with the 3DS packages (devkitARM, libctru, picasso, Citro3D), then:
 
-Still required:
+```sh
+make            # forza3ds.3dsx
+make PROFILE=1  # same, with timing log in sdmc:/3ds/forza3ds/perf.csv
+```
 
-- Test the corrected top-screen presentation and bottom-screen menu graphics on a physical New 3DS.
-- Test the menu → car → workshop → driving → workshop loop on a physical New 3DS.
-- Measure frame time and confirm the 30 FPS target on real hardware.
-- Test NDSP audio stability, buffer lifetime and sound quality on the console.
-- Add more vehicles; the current selectable catalogue has one prototype.
-- Implement the playable progression mode, separate progression/free-mode save data and persistent workshop builds.
-- Extend the vehicle simulation and validate its behavior; the current dynamics remain simplified.
-- Add visual customization, a full vehicle collection and the later procedural island/world systems.
+Copy `forza3ds.3dsx` to `sdmc:/3ds/` and start it from the Homebrew Launcher.
+Sound needs the DSP firmware dump `sdmc:/3ds/dspfirm.cdc`.
 
-The OBJ/MTL importer, model browser, procedural multi-peninsula world, sector streaming, races and AI are still roadmap work.
+## Test
 
-## Target and build
+```sh
+git clone https://github.com/devkitPro/citro3d.git /tmp/citro3d
+CITRO3D_DIR=/tmp/citro3d tests/run.sh
+```
 
-- New Nintendo 3DS / New Nintendo 3DS XL (ARM11).
-- Native 3DSX output.
-- C, devkitARM, libctru and Citro3D.
-- Target: 30 FPS stable, to be measured on real hardware.
+GitHub Actions builds the 3DSX (uploaded as an artifact) and runs these tests.
 
-Install devkitPro with devkitARM, libctru and Citro3D, then run:
+## Console checklist (to do on a New 3DS)
 
-~~~sh
-make
-~~~
+1. The game starts, both screens display, and it quits cleanly.
+2. Menu → car → workshop → drive → pause → workshop.
+3. Circle Pad steers both ways at low and high speed; braking, reverse, handbrake, collisions.
+4. Chase and cockpit views; no geometry crossing the camera.
+5. Engine sound without crackle; changes with parts, revs and cockpit view.
+6. Close the lid while driving: the game stays paused on reopening.
+7. Restart: settings and saved garage are restored.
+8. With `make PROFILE=1`, drive a few laps and send back `perf.csv` (target: stable 30 FPS).
 
-The expected output is forza3ds.3dsx. Set DEVKITPRO and DEVKITARM in the environment.
+## Not implemented yet
 
-## GitHub Actions
-
-The workflow is configured to build the 3DSX and run deterministic host-side engine tests. The latest source changes still need a confirmed successful run.
-
-## Planned SD-card model packages
-
-Custom OBJ models are planned under:
-
-~~~text
-sdmc:/3ds/forza3ds/models/cars/<model-id>/
-  model.obj
-  model.mtl
-  textures/
-  vehicle.cfg
-~~~
-
-The importer and in-game model browser are not implemented yet. OBJ geometry will remain separate from vehicle physics and mechanical data.
+Progression mode (collection, money, discoveries, races, AI), the procedural island,
+biomes and day/night cycle, OBJ import, positional audio, reverb and biome ambiences,
+texture quality (the game has no textures).
 
 ## Documentation
 
-- [TODO.md](TODO.md) — consolidated project scope and checklist
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — engine architecture
-- [docs/ASSET_PIPELINE.md](docs/ASSET_PIPELINE.md) — planned OBJ package and conversion pipeline
-- [docs/COORDINATE_CONVENTIONS.md](docs/COORDINATE_CONVENTIONS.md) — coordinate conventions
+- [TODO.md](TODO.md) — scope and checklist
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/COORDINATE_CONVENTIONS.md](docs/COORDINATE_CONVENTIONS.md)
+- [docs/ASSET_PIPELINE.md](docs/ASSET_PIPELINE.md) — planned OBJ pipeline

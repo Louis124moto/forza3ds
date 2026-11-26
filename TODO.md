@@ -6,14 +6,32 @@
 
 # Forza3DS — TODO
 
-> Cahier des charges consolidé le 25 novembre 2026. Toutes les cases sont des tâches à réaliser, pas des fonctionnalités déjà présentes.
+> Cahier des charges consolidé le 25 novembre 2026.
+> [x] = code écrit et vérifié par la compilation ou les tests automatiques sur PC. Cela ne vaut **pas** validation sur console : les points qui dépendent du matériel (affichage, restitution sonore, performances, clapet) restent décochés tant qu'ils n'ont pas été essayés sur New 3DS.
+
+## Audit et corrections — 26/11/2026
+- [x] Voiture transformée autour de l'origine du monde, direction inversée, vue cockpit et réglage caméra en conduite défectueux : corrigés.
+- [x] Obstacles sur la route, virage trop serré du tracé, arbres traversables, téléportation sur les rampes : corrigés (tracé relissé).
+- [x] Changements de rapport perdus, absence de rupteur, marche arrière inutilisable, freinage irréaliste (~12 g), amortisseurs sans effet : corrigés.
+- [x] Limiteur FPS, interpolation, annulation de la réattribution des touches, sauvegardes non atomiques, coupures audio, pause clapet, sortie immédiate par SELECT : corrigés dans le code (à confirmer sur console).
+- [x] Direction progressive limitée selon l'adhérence, contre-braquage et amortissement du lacet ajoutés ; la formule cinématique du 25/11 est remplacée par un modèle de bicyclette dynamique à forces de pneus.
+- [ ] Essais sur New 3DS : suivre la liste « Console checklist » du README et rapporter perf.csv.
+
+## Points à clarifier avec le porteur du projet
+- Pluie : « soleil uniquement » contre « adapter les sons à la pluie et aux surfaces mouillées ». Non implémenté.
+- Caméra : à l'arrêt l'angle choisi est conservé ; recentrage après relâchement en roulant et au redémarrage. Seules distance et hauteur sont sauvegardées (pas l'angle d'orbite). Le C-stick vertical ne fait rien.
+- Boîte de vitesses : 10 rapports au maximum (le texte demande de ne pas plafonner les réglages).
+- Garage Libre : sauvegarde manuelle depuis l'atelier.
+- « Qualité des textures » : le jeu n'a pas encore de textures.
+- Surfaces sonores : asphalte, gravier et herbe ; la « terre » n'est pas une surface distincte.
+- Mesures : journal sur carte SD avec `make PROFILE=1`, aucun panneau de statistiques en jeu.
 
 ## Objectif
 Jeu de conduite 3D natif pour New Nintendo 3DS, écrit en C avec devkitARM, libctru et Citro3D. Priorité à une démo de conduite très soignée avant le monde complet.
 
 ## Contraintes
 - [ ] Cible : New Nintendo 3DS / New Nintendo 3DS XL (ARM11).
-- [ ] Exécutable natif 3DSX.
+- [x] Exécutable natif 3DSX.
 - [ ] Objectif : 30 FPS stables, à mesurer sur console réelle.
 - [ ] Pas de 3D stéréoscopique dans la première version.
 - [ ] Tester sur vraie New 3DS à chaque étape significative.
@@ -32,57 +50,57 @@ Jeu de conduite 3D natif pour New Nintendo 3DS, écrit en C avec devkitARM, libc
 - [ ] Argent gagné par les courses ; pas de niveaux de personnage.
 
 ## Menus et modes de jeu — priorité principale
-- [ ] Créer un vrai menu principal clair, navigable à la manette et adapté aux deux écrans.
-- [ ] Proposer au minimum deux entrées distinctes : Mode Libre et Mode Progression.
-- [ ] Mode Libre : donner immédiatement accès à toutes les voitures présentes dans le jeu, sans déblocage, achat ni coût.
-- [ ] Mode Libre : permettre de choisir une voiture et d'ouvrir directement son atelier complet, sans devoir passer par une progression.
-- [ ] Mode Libre : autoriser librement les modifications visuelles, mécaniques et les réglages détaillés, puis essayer immédiatement la voiture en conduite libre.
-- [ ] Mode Libre : rendre les pièces et possibilités de préparation disponibles sans restriction d'argent ou de progression.
-- [ ] Mode Libre : permettre de revenir au choix des voitures et à l'atelier depuis la session de conduite.
+- [x] Créer un vrai menu principal clair, navigable à la manette et adapté aux deux écrans.
+- [x] Proposer au minimum deux entrées distinctes : Mode Libre et Mode Progression.
+- [x] Mode Libre : donner immédiatement accès à toutes les voitures présentes dans le jeu, sans déblocage, achat ni coût.
+- [x] Mode Libre : permettre de choisir une voiture et d'ouvrir directement son atelier complet, sans devoir passer par une progression.
+- [x] Mode Libre : autoriser librement les modifications visuelles, mécaniques et les réglages détaillés, puis essayer immédiatement la voiture en conduite libre.
+- [x] Mode Libre : rendre les pièces et possibilités de préparation disponibles sans restriction d'argent ou de progression.
+- [x] Mode Libre : permettre de revenir au choix des voitures et à l'atelier depuis la session de conduite.
 - [ ] Mode Progression : conserver la collection à débloquer/restaurer et l'économie basée sur les récompenses de courses.
 - [ ] Séparer les données et sauvegardes du bac à sable Libre de celles de la Progression afin que les essais libres ne modifient pas la collection ou l'économie de progression.
-- [ ] Organiser les menus autour des trois fonctions centrales du jeu : choisir une voiture, la modifier/régler et conduire pour ressentir les effets.
+- [x] Organiser les menus autour des trois fonctions centrales du jeu : choisir une voiture, la modifier/régler et conduire pour ressentir les effets.
 
 ## Première démo jouable — priorité absolue
 - [ ] Initialiser l'application native et les écrans.
 - [ ] Initialiser Citro3D et afficher une scène 3D.
-- [ ] Lire les commandes de la New 3DS, permettre leur reconfiguration, et exposer sensibilité de direction et zone morte du Circle Pad réglables. Pas d'option d'inversion gauche/droite.
+- [x] Lire les commandes de la New 3DS, permettre leur reconfiguration, et exposer sensibilité de direction et zone morte du Circle Pad réglables. Pas d'option d'inversion gauche/droite.
 - [ ] Afficher une voiture prototype, une route et un environnement minimal.
 - [ ] Implémenter le système de caméra libre : orbite autour du véhicule au C-stick de la New 3DS, distance et hauteur réglables, recentrage automatique derrière le véhicule après relâchement et au redémarrage depuis l'arrêt, vitesse de recentrage réglable, vues extérieure et cockpit, positions personnalisées sauvegardables globalement (pas par véhicule). La caméra ne permet pas de déplacement vertical libre. La vue cockpit affiche le volant et le tableau de bord, avec position standard non réglable.
-- [ ] Implémenter accélération, freinage, direction et mouvement.
-- [ ] Ajouter collisions simples avec route et obstacles.
+- [x] Implémenter accélération, freinage, direction et mouvement.
+- [x] Ajouter collisions simples avec route et obstacles.
 - [ ] Afficher vitesse et rapport sur l'écran inférieur.
 - [ ] Mesurer les performances sur New 3DS et profiler avant d'ajouter des détails.
 - [ ] Obtenir une démo stable et soignée avant d'élargir le périmètre.
-- [ ] La première démo doit déjà présenter le flux central : menu principal → mode Libre → choix d'une voiture → atelier/réglages → conduite libre → retour à l'atelier.
+- [x] La première démo doit déjà présenter le flux central : menu principal → mode Libre → choix d'une voiture → atelier/réglages → conduite libre → retour à l'atelier.
 
 ## Architecture du moteur
-- [ ] Moteur spécifique au jeu, écrit en C.
+- [x] Moteur spécifique au jeu, écrit en C.
 - [ ] Modules séparés : core, input, render, physics, vehicle, world, generation, assets, UI, audio et save.
-- [ ] Citro3D pour le rendu PICA200 ; libctru pour les services système.
-- [ ] Séparer strictement géométrie visuelle, définition physique et état runtime des véhicules.
-- [ ] Boucle de jeu avec pas de simulation fixe configurable par profils prédéfinis (compromis performance / réalisme) et limite de rattrapage.
+- [x] Citro3D pour le rendu PICA200 ; libctru pour les services système.
+- [x] Séparer strictement géométrie visuelle, définition physique et état runtime des véhicules.
+- [x] Boucle de jeu avec pas de simulation fixe configurable par profils prédéfinis (compromis performance / réalisme) et limite de rattrapage.
 - [ ] Mesurer CPU, GPU, mémoire, temps de génération et temps de frame sur la console.
 - [ ] Définir les budgets de mémoire, triangles, matériaux, textures et objets visibles à partir de mesures réelles.
 
 ## Physique automobile personnalisée — priorité principale
-- [ ] Définir unités, échelle, repère et conventions de coordonnées.
-- [ ] Implémenter masse, inertie, centre de gravité et forces longitudinales/latérales.
-- [ ] Implémenter direction progressive avec inertie.
-- [ ] Implémenter accélération, freinage et frein à main.
-- [ ] Implémenter suspensions et transferts de charge.
-- [ ] Implémenter adhérence dépendant de la vitesse et de la surface.
-- [ ] Implémenter glisse, survirage, sous-virage et récupération.
-- [ ] Implémenter moteur, rapports et transmissions automatique/manuelle.
-- [ ] Ajouter progressivement ABS, antipatinage et aides configurables.
-- [ ] Créer des comportements distincts par véhicule.
-- [ ] Faire réagir immédiatement la physique aux réglages et pièces changés dans l'atelier : puissance/couple, régime, suralimentation, rapports, différentiels, suspensions et pneus.
-- [ ] Faire en sorte que les modifications moteur changent aussi réellement la signature sonore, le régime et la réponse à la charge.
-- [ ] Écrire des tests numériques déterministes pour les fonctions physiques critiques.
+- [x] Définir unités, échelle, repère et conventions de coordonnées.
+- [x] Implémenter masse, inertie, centre de gravité et forces longitudinales/latérales.
+- [x] Implémenter direction progressive avec inertie.
+- [x] Implémenter accélération, freinage et frein à main.
+- [x] Implémenter suspensions et transferts de charge.
+- [x] Implémenter adhérence dépendant de la vitesse et de la surface.
+- [x] Implémenter glisse, survirage, sous-virage et récupération.
+- [x] Implémenter moteur, rapports et transmissions automatique/manuelle.
+- [x] Ajouter progressivement ABS, antipatinage et aides configurables.
+- [x] Créer des comportements distincts par véhicule.
+- [x] Faire réagir immédiatement la physique aux réglages et pièces changés dans l'atelier : puissance/couple, régime, suralimentation, rapports, différentiels, suspensions et pneus.
+- [x] Faire en sorte que les modifications moteur changent aussi réellement la signature sonore, le régime et la réponse à la charge.
+- [x] Écrire des tests numériques déterministes pour les fonctions physiques critiques.
 
 ## Modèles 3D générés et personnalisables
 ### Modèles intégrés
-- [ ] Générer en C des maillages simples pour voitures, roues, routes et objets de test.
+- [x] Générer en C des maillages simples pour voitures, roues, routes et objets de test.
 - [ ] Utiliser ces modèles intégrés pour les prototypes et comme solution de repli.
 
 ### Importateur OBJ natif depuis la carte SD
@@ -162,46 +180,46 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 
 ## Garage, atelier et véhicules — priorité principale
 - [ ] Créer un garage 3D avec caméra d'inspection, accessible directement depuis les menus et le mode Libre.
-- [ ] Faire de l'atelier de modifications une fonctionnalité centrale, pas un menu secondaire réservé à la fin du jeu.
-- [ ] Toute modification appliquée dans l'atelier doit être transmise immédiatement au modèle physique et au système audio, puis vérifiable en conduite.
+- [x] Faire de l'atelier de modifications une fonctionnalité centrale, pas un menu secondaire réservé à la fin du jeu.
+- [x] Toute modification appliquée dans l'atelier doit être transmise immédiatement au modèle physique et au système audio, puis vérifiable en conduite.
 - [ ] Gérer la collection de véhicules.
-- [ ] Séparer données visuelles, physiques et mécaniques.
+- [x] Séparer données visuelles, physiques et mécaniques.
 - [ ] Permettre peintures, roues et modifications visuelles.
-- [ ] Prévoir améliorations moteur, transmission, pneus et suspension.
-- [ ] Permettre le réglage et la préparation détaillée des moteurs : régime maximal, pression de suralimentation du turbo et autres paramètres, avec des effets cohérents sur les performances et le son.
-- [ ] Créer un véritable atelier accessible en jeu, avec une interface permettant de régler individuellement les paramètres de préparation moteur.
-- [ ] Permettre de remplacer et configurer individuellement les pièces moteur (turbo, admission, échappement, injecteurs, pistons, arbre à cames, etc.), avec des effets cohérents sur les performances et la sonorité.
+- [x] Prévoir améliorations moteur, transmission, pneus et suspension.
+- [x] Permettre le réglage et la préparation détaillée des moteurs : régime maximal, pression de suralimentation du turbo et autres paramètres, avec des effets cohérents sur les performances et le son.
+- [x] Créer un véritable atelier accessible en jeu, avec une interface permettant de régler individuellement les paramètres de préparation moteur.
+- [x] Permettre de remplacer et configurer individuellement les pièces moteur (turbo, admission, échappement, injecteurs, pistons, arbre à cames, etc.), avec des effets cohérents sur les performances et la sonorité.
 - [ ] Ne pas imposer de plafond artificiel aux réglages de préparation (pression de turbo, régime maximal et autres paramètres) ; faire ressentir clairement chaque modification dans le comportement du véhicule et la rendre nettement audible dans le son du moteur.
-- [ ] Permettre le réglage détaillé de la boîte de vitesses dans l'atelier : nombre de rapports, rapports individuels et démultiplication finale, avec des effets réels sur l'accélération, la vitesse et le comportement du véhicule.
-- [ ] Permettre le réglage des différentiels avant, central et arrière dans l'atelier, notamment leur taux de blocage et la répartition du couple, avec des effets réels sur la motricité et le comportement du véhicule.
-- [ ] Permettre le réglage individuel des suspensions dans l'atelier : hauteur, raideur des ressorts, compression et détente des amortisseurs, avec des effets réels sur la tenue de route et le comportement.
-- [ ] Proposer plusieurs types de pneus (route, sport, semi-slick, slick, rallye et tout-terrain), chacun avec des propriétés physiques distinctes influençant réellement l'adhérence et le comportement du véhicule.
+- [x] Permettre le réglage détaillé de la boîte de vitesses dans l'atelier : nombre de rapports, rapports individuels et démultiplication finale, avec des effets réels sur l'accélération, la vitesse et le comportement du véhicule.
+- [x] Permettre le réglage des différentiels avant, central et arrière dans l'atelier, notamment leur taux de blocage et la répartition du couple, avec des effets réels sur la motricité et le comportement du véhicule.
+- [x] Permettre le réglage individuel des suspensions dans l'atelier : hauteur, raideur des ressorts, compression et détente des amortisseurs, avec des effets réels sur la tenue de route et le comportement.
+- [x] Proposer plusieurs types de pneus (route, sport, semi-slick, slick, rallye et tout-terrain), chacun avec des propriétés physiques distinctes influençant réellement l'adhérence et le comportement du véhicule.
 - [ ] Ajouter découverte et restauration automatique des véhicules abandonnés.
 - [ ] Gérer réparations et pièces récupérées/achetées.
 - [ ] Ne pas implémenter d'usure générale permanente.
 
 ## Interface, audio et sauvegarde
 - [ ] Écran supérieur : conduite ; écran inférieur : vitesse, compte-tours, rapport et informations.
-- [ ] Carte consultable à tout moment.
+- [x] Carte consultable à tout moment.
 - [ ] Caméra extérieure libre et caméra cockpit interchangeables, avec positions personnalisées globales sauvegardées ; voir les règles détaillées dans la section Première démo jouable.
 - [ ] Audio moteur prioritaire, vent et ambiance environnementale.
 - [ ] Adapter dynamiquement les ambiances sonores naturelles (vent, forêt, mer, oiseaux, etc.) au biome et à l'environnement traversés.
-- [ ] Faire varier dynamiquement le volume des sons environnementaux, notamment le vent, en fonction de la vitesse du véhicule.
-- [ ] Faire évoluer le son du moteur de manière réaliste selon le régime moteur (RPM) et la charge.
-- [ ] Donner à chaque moteur une signature sonore propre selon ses caractéristiques (cylindrée, nombre de cylindres, aspiration et autres paramètres).
-- [ ] Adapter le son du moteur à la vue cockpit avec une atténuation et un filtrage réalistes depuis l'habitacle.
+- [x] Faire varier dynamiquement le volume des sons environnementaux, notamment le vent, en fonction de la vitesse du véhicule.
+- [x] Faire évoluer le son du moteur de manière réaliste selon le régime moteur (RPM) et la charge.
+- [x] Donner à chaque moteur une signature sonore propre selon ses caractéristiques (cylindrée, nombre de cylindres, aspiration et autres paramètres).
+- [x] Adapter le son du moteur à la vue cockpit avec une atténuation et un filtrage réalistes depuis l'habitacle.
 - [ ] Adapter les sons à la pluie et aux surfaces mouillées : roulement, projections d'eau et bruits d'adhérence des pneus.
 - [ ] Produire des sons de roulement et d'adhérence distincts et réalistes selon le matériau de surface (asphalte, gravier, terre, herbe).
 - [ ] Spatialiser les sons en 3D selon leur direction et leur distance dans le monde.
 - [ ] Adapter la réverbération sonore à l'environnement (tunnels, garages et espaces ouverts).
-- [ ] Proposer des réglages de volume indépendants pour le moteur et l'ambiance environnementale.
+- [x] Proposer des réglages de volume indépendants pour le moteur et l'ambiance environnementale.
 - [ ] Cycle jour/nuit rapide avec éclairage adapté.
 - [ ] Sauvegarder manuellement la progression (graine, version du générateur, position, garage, assignations, réglages, argent, records et découvertes), avec sauvegarde rapide accessible depuis le menu pause ; une seule sauvegarde de progression. Ne pas sauvegarder automatiquement la progression à la fermeture.
-- [ ] Sauvegarder automatiquement les réglages de commandes, caméra et graphismes.
-- [ ] Versionner les sauvegardes et gérer les fichiers corrompus sans écraser une sauvegarde valide.
+- [x] Sauvegarder automatiquement les réglages de commandes, caméra et graphismes.
+- [x] Versionner les sauvegardes et gérer les fichiers corrompus sans écraser une sauvegarde valide.
 - [ ] Menu de réglages graphiques : qualité des textures, ombres et distance d'affichage.
 - [ ] Limiteur FPS configurable et compteur FPS temps réel activable/masquable ; aucun panneau de statistiques CPU/GPU/mémoire, benchmark intégré ou détection automatique des réglages.
-- [ ] Mettre en pause la simulation physique lorsque le joueur met le jeu en pause.
+- [x] Mettre en pause la simulation physique lorsque le joueur met le jeu en pause.
 - [ ] Couper automatiquement le son du jeu pendant la pause et restaurer le volume précédent à la reprise.
 - [ ] Mettre automatiquement le jeu en pause lorsque le clapet de la New 3DS est fermé ; à la réouverture, rester en pause jusqu'à une action explicite du joueur pour reprendre.
 - [ ] Régénérer les données immuables depuis la graine ; stocker explicitement tout état non dérivable.
@@ -212,7 +230,7 @@ sdmc:/3ds/forza3ds/models/cars/model-id/
 - [ ] Compilation automatique devkitARM/libctru/Citro3D via GitHub Actions.
 - [ ] Publier le 3DSX comme artefact CI lorsque le build réussit.
 - [ ] Tester lancement, fermeture, contrôles et performances sur vraie New 3DS.
-- [ ] Documenter les fonctionnalités réellement terminées.
+- [x] Documenter les fonctionnalités réellement terminées.
 - [ ] Ne pas confondre compilation réussie et fonctionnalité jouable.
 
 ## Diagnostic rendu 3D — 25/11/2026
