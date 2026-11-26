@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "meshes.h"
+#include "textures.h"
 #include <string.h>
 #include "vshader_shbin.h"
 
@@ -24,6 +25,17 @@ static C3D_FVec to_c3d(FVec3 v)
 	return out;
 }
 
+/* Bind a texture on unit 0; fall back to the plain white texture so the
+ * MODULATE stage keeps per-vertex colors when a texture is missing. */
+static void bind_tex(F3DSTexId id)
+{
+	C3D_Tex *tex = textures_get(id);
+	if (!tex)
+		tex = textures_get(F3DS_TEX_WHITE);
+	if (tex)
+		C3D_TexBind(0, tex);
+}
+
 void renderer_init(void)
 {
 	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
@@ -41,11 +53,16 @@ void renderer_init(void)
 	AttrInfo_Init(attrInfo);
 	AttrInfo_AddLoader(attrInfo, 0, GPU_FLOAT, 3);
 	AttrInfo_AddLoader(attrInfo, 1, GPU_FLOAT, 4);
+	AttrInfo_AddLoader(attrInfo, 2, GPU_FLOAT, 2);
 
+	/* Texture color multiplied by the per-vertex color: untextured
+	 * geometry samples the white texture and keeps its vertex color. */
 	C3D_TexEnv *env = C3D_GetTexEnv(0);
 	C3D_TexEnvInit(env);
-	C3D_TexEnvSrc(env, C3D_Both, GPU_PRIMARY_COLOR, 0, 0);
-	C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
+	C3D_TexEnvSrc(env, C3D_Both, GPU_TEXTURE0, GPU_PRIMARY_COLOR, 0);
+	C3D_TexEnvFunc(env, C3D_Both, GPU_MODULATE);
+
+	textures_init();
 
 	C3D_CullFace(GPU_CULL_NONE);
 	C3D_DepthTest(true, GPU_GEQUAL, GPU_WRITE_ALL);
@@ -73,7 +90,7 @@ void renderer_set_track(const F3DSTrack *track, const F3DSTerrain *terrain)
 
 	C3D_BufInfo *bufInfo = C3D_GetBufInfo();
 	BufInfo_Init(bufInfo);
-	BufInfo_Add(bufInfo, s_meshes.data, sizeof(F3DSVertex), 2, 0x10);
+	BufInfo_Add(bufInfo, s_meshes.data, sizeof(F3DSVertex), 3, 0x210);
 }
 
 static void draw(const F3DSMeshes *m, uint32_t start, uint32_t count)
@@ -117,16 +134,31 @@ void renderer_render(const F3DSCamera *cam, const F3DSVehicleState *car)
 	C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projView);
 
 	if (s_garage) {
+		bind_tex(F3DS_TEX_WHITE);
 		draw(&s_meshes, s_meshes.garageStart, s_meshes.garageCount);
 	} else {
-		draw(&s_meshes, s_meshes.groundStart, s_meshes.groundCount);
+		bind_tex(F3DS_TEX_WATER);
+		draw(&s_meshes, s_meshes.oceanStart, s_meshes.oceanCount);
+		bind_tex(F3DS_TEX_GRASS);
+		draw(&s_meshes, s_meshes.islandStart, s_meshes.islandCount);
+		bind_tex(F3DS_TEX_SAND);
+		draw(&s_meshes, s_meshes.beachStart, s_meshes.beachCount);
+		bind_tex(F3DS_TEX_WHITE);
+		draw(&s_meshes, s_meshes.forestStart, s_meshes.forestCount);
+		bind_tex(F3DS_TEX_ASPHALT);
 		draw(&s_meshes, s_meshes.roadStart, s_meshes.roadCount);
+		bind_tex(F3DS_TEX_WHITE);
+		draw(&s_meshes, s_meshes.roadLinesStart, s_meshes.roadLinesCount);
 		draw(&s_meshes, s_meshes.obstacleStart, s_meshes.obstacleCount);
 		draw(&s_meshes, s_meshes.decorStart, s_meshes.decorCount);
+		bind_tex(F3DS_TEX_DIRT);
 		draw(&s_meshes, s_meshes.terrainStart, s_meshes.terrainCount);
+		bind_tex(F3DS_TEX_GRAVEL);
+		draw(&s_meshes, s_meshes.gravelStart, s_meshes.gravelCount);
 	}
 
 	set_car_matrix(car, &view);
+	bind_tex(F3DS_TEX_WHITE);
 	draw(&s_meshes, s_meshes.cockpitStart, s_meshes.cockpitCount);
 	draw(&s_meshes, s_meshes.carStart, s_meshes.carCount);
 
@@ -136,6 +168,7 @@ void renderer_render(const F3DSCamera *cam, const F3DSVehicleState *car)
 void renderer_exit(void)
 {
 	meshes_free(&s_meshes);
+	textures_exit();
 	shaderProgramFree(&s_program);
 	DVLB_Free(s_dvlb);
 	C3D_Fini();

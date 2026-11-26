@@ -4,6 +4,13 @@
 - [ ] Mesurer la synchronisation camera/voiture en conduite ; la camera de poursuite est calculee directement depuis la pose de la voiture apres les sous-etapes physiques, confirmer visuellement en jeu.
 - [ ] Refaire des essais freinage, marche arriere, frein a main et collisions apres validation du virage.
 
+## Graphismes de la demo — 26/11/2026
+- [x] Restaurer la physique validee (commit f6c9f2d3) ecrasee par la serie de restaurations du 26/11 a 18h07 (commit ddb966b).
+- [x] Etendre le format de sommet avec des UV et le vertex shader avec la sortie texcoord0.
+- [x] Generer au demarrage des textures procedurales libres de droits (aucun binaire dans le depot) : eau, herbe, sable, asphalte, terre, gravier.
+- [x] Ajouter des details de carte : kerbs rouge/blanc, ligne centrale pointillee, ligne de depart en damier, poteaux de balisage, tribune, village, arbres et rochers supplementaires.
+- [ ] Verifier sur New 3DS que les textures s'affichent sans corruption et que les 30 FPS tiennent en conduite.
+
 # Forza3DS — TODO
 
 > Cahier des charges consolidé le 25 novembre 2026. Toutes les cases sont des tâches à réaliser, pas des fonctionnalités déjà présentes.

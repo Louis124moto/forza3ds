@@ -10,16 +10,22 @@
 typedef struct {
 	float x, y, z;
 	float r, g, b, a;
+	float u, v;
 } F3DSVertex;
 
 typedef struct {
 	F3DSVertex *data;
 	uint32_t total;
-	uint32_t groundStart, groundCount;
+	uint32_t oceanStart, oceanCount;
+	uint32_t islandStart, islandCount;
+	uint32_t beachStart, beachCount;
+	uint32_t forestStart, forestCount;
 	uint32_t roadStart, roadCount;
+	uint32_t roadLinesStart, roadLinesCount;
 	uint32_t obstacleStart, obstacleCount;
 	uint32_t decorStart, decorCount;
 	uint32_t terrainStart, terrainCount;
+	uint32_t gravelStart, gravelCount;
 	uint32_t carStart, carCount;
 	uint32_t cockpitStart, cockpitCount;
 	uint32_t garageStart, garageCount;

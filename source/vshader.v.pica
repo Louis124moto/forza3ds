@@ -1,5 +1,5 @@
 ; Forza3DS - PICA200 vertex shader
-; v0 = position (model space), v1 = per-vertex RGBA color
+; v0 = position (model space), v1 = per-vertex RGBA color, v2 = texture UV
 ; Uniforms: projection (combined projection * view * model, 4 fvecs)
 
 .fvec projection[4]
@@ -10,9 +10,11 @@
 
 .out outpos position
 .out outclr color
+.out outtex texcoord0
 
 .alias inpos v0
 .alias inclr v1
+.alias inuv  v2
 
 .proc main
 	mov r0.xyz, inpos
@@ -24,5 +26,6 @@
 	dp4 outpos.w, projection[3], r0
 
 	mov outclr, inclr
+	mov outtex, inuv
 	end
 .end
