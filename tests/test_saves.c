@@ -115,6 +115,50 @@ static void settings_files(const char *dir)
 	}
 }
 
+/* A garage written by the four-car release is migrated. */
+static void garage_v1(const char *dir)
+{
+	/* Same record layout as version 2, four of them. */
+	char path[160], v2[160];
+	snprintf(v2, sizeof(v2), "%s/mig/v2.bin", dir);
+	snprintf(path, sizeof(path), "%s/mig/v1.bin", dir);
+	F3DSGarage a, b;
+	garage_defaults(&a);
+	a.selected = 3;
+	a.paint[3] = 7;
+	a.def[1].turboBoostBar = 1.9f;
+	CHECK(garage_save(&a, v2));
+	static uint8_t file[64 * 1024];
+	FILE *f = fopen(v2, "rb");
+	CHECK(f != NULL);
+	if (!f) return;
+	const size_t n = fread(file, 1, sizeof(file), f);
+	fclose(f);
+	const size_t record = (n - 16 - 4) / F3DS_CAR_COUNT;
+	CHECK(record * F3DS_CAR_COUNT + 20 == n);
+	uint32_t head[4];
+	memcpy(head, file, sizeof(head));
+	head[1] = 1u;
+	head[2] = (uint32_t)(4 + 4 * record);
+	head[3] = save_crc32(file + 16, head[2]);
+	memcpy(file, head, sizeof(head));
+	f = fopen(path, "wb");
+	CHECK(f != NULL);
+	if (!f) return;
+	CHECK(fwrite(file, 1, 16 + head[2], f) == 16 + head[2]);
+	fclose(f);
+	garage_defaults(&b);
+	CHECK(garage_load(&b, path));
+	CHECK(b.selected == 3 && b.paint[3] == 7 && b.def[1].turboBoostBar == 1.9f);
+	F3DSVehicleDef stock;
+	catalog_def(9, &stock);
+	CHECK(memcmp(&b.def[9], &stock, sizeof(stock)) == 0);
+	/* Saving afterwards writes the current version over it. */
+	b.def[9].maxRpm = 9000.0f;
+	CHECK(garage_save(&b, path));
+	CHECK(garage_load(&a, path) && a.def[9].maxRpm == 9000.0f && a.paint[3] == 7);
+}
+
 static void garage_files(const char *dir)
 {
 	char path[160];
@@ -154,4 +198,5 @@ void test_saves(const char *dir)
 {
 	settings_files(dir);
 	garage_files(dir);
+	garage_v1(dir);
 }

@@ -19,6 +19,7 @@
 #define ROW_H 15
 #define LIST_TOP 38
 #define LIST_ROWS 10
+#define CAR_ROWS 5
 
 static void frame(F3DSCanvas *c, const char *title, const char *help)
 {
@@ -76,13 +77,16 @@ static void draw_main(F3DSCanvas *c, const F3DSApp *app)
 static void car_row(const void *ctx, int row, char *out, int size)
 {
 	(void)ctx;
-	snprintf(out, size, "%s", row < F3DS_CAR_COUNT ? catalog_info(row)->name : "Retour");
+	if (row < F3DS_CAR_COUNT)
+		snprintf(out, size, "%2d/%d  %s", row + 1, F3DS_CAR_COUNT, catalog_info(row)->name);
+	else
+		snprintf(out, size, "Retour");
 }
 
 static void draw_cars(F3DSCanvas *c, const F3DSApp *app)
 {
-	frame(c, "Mode Libre - choix de la voiture", "A : atelier  B : retour  R : moteur");
-	list(c, F3DS_CAR_COUNT + 1, app->selected, F3DS_CAR_COUNT + 1, car_row, NULL);
+	frame(c, "Mode Libre - choix de la voiture", "A:atelier  B:retour  < >:page  R:moteur");
+	list(c, F3DS_CAR_COUNT + 1, app->selected, CAR_ROWS, car_row, NULL);
 	const int car = app->garage.selected;
 	const F3DSVehicleDef *d = &app->garage.def[car];
 	char buf[64];

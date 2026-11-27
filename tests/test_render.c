@@ -69,7 +69,7 @@ static void geometry(void)
 			for (uint32_t k = 0; k < ranges[r].count; ++k) {
 				const F3DSVertex *p = &s_buffer[ranges[r].start + k];
 				if (fabsf(p->x) > v->halfWidth + 0.25f || fabsf(p->z) > v->halfLength + 0.2f ||
-				    p->y < 0.0f || p->y > 2.2f)
+				    p->y < 0.0f || p->y > v->roofY + 0.35f)
 					outside++;
 			}
 		CHECKF(outside == 0, "car %d: %d vertices", i, outside);

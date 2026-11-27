@@ -187,6 +187,13 @@ static void select_car(F3DSApp *app, int car)
 static void update_cars(F3DSApp *app)
 {
 	move_selection(app, F3DS_CAR_COUNT + 1);
+	/* Left and right jump a whole page of the list. */
+	const int page = app->input.menuRight ? 5 : app->input.menuLeft ? -5 : 0;
+	if (page) {
+		const int next = app->selected + page;
+		app->selected = next < 0 ? 0 : next > F3DS_CAR_COUNT ? F3DS_CAR_COUNT : next;
+		touch(app);
+	}
 	if (app->selected < F3DS_CAR_COUNT)
 		select_car(app, app->selected); /* live preview in the garage */
 	if (app->input.menuBack || (app->input.menuConfirm && app->selected == F3DS_CAR_COUNT)) {

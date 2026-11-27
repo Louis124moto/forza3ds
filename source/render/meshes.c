@@ -550,7 +550,7 @@ static void car_exterior(F3DSMeshes *m, int car)
 		box(m, s * (w + 0.09f) - 0.09f, belt + 0.01f, v->cabinFront - 0.18f,
 			s * (w + 0.09f) + 0.09f, belt + 0.13f, v->cabinFront - 0.02f, WHITE, FACE_ALL);
 	}
-	if (v->spoiler)
+	if (v->trim & (F3DS_TRIM_LIP | F3DS_TRIM_WING))
 		box(m, -w * 0.88f, belt + 0.20f, -l + 0.02f, w * 0.88f, belt + 0.25f, -l + 0.34f, WHITE, FACE_ALL);
 	m->cars[car].paint = since(m, start);
 
@@ -559,7 +559,7 @@ static void car_exterior(F3DSMeshes *m, int car)
 	frustum(m, belt, v->cabinRear, v->cabinFront, w * 0.89f,
 		roof - 0.06f, v->roofRear, v->roofFront, w * 0.74f, RGB(0.20f, 0.34f, 0.46f),
 		FACE_BACK | FACE_FRONT | FACE_LEFT | FACE_RIGHT);
-	if (v->spoiler)
+	if (v->trim & (F3DS_TRIM_LIP | F3DS_TRIM_WING))
 		for (int s = -1; s <= 1; s += 2)
 			box(m, s * w * 0.6f - 0.04f, belt, -l + 0.12f, s * w * 0.6f + 0.04f, belt + 0.21f,
 				-l + 0.22f, RGB(0.10f, 0.10f, 0.11f), FACE_ALL);

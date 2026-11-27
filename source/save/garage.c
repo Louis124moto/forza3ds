@@ -3,7 +3,9 @@
 #include <string.h>
 
 #define GARAGE_MAGIC 0x46334752u /* "F3GR" */
-#define GARAGE_VERSION 1u
+#define GARAGE_VERSION 2u
+/* Version 1 held the first four cars of the catalogue. */
+#define GARAGE_V1_CARS 4
 
 /* Only workshop-tunable values are stored; the rest of each definition comes
  * from the catalogue. Every member is 4 bytes wide, so there is no padding. */
@@ -24,6 +26,11 @@ typedef struct {
 	int32_t selected;
 	Record car[F3DS_CAR_COUNT];
 } File;
+
+typedef struct {
+	int32_t selected;
+	Record car[GARAGE_V1_CARS];
+} FileV1;
 
 #define COPY_FIELDS(dst, src) do { \
 	(dst)->brakeForce = (src)->brakeForce; (dst)->brakeBiasFront = (src)->brakeBiasFront; \
@@ -57,14 +64,15 @@ void garage_defaults(F3DSGarage *g)
 		garage_restore_car(g, i);
 }
 
-static bool unpack(const File *f, F3DSGarage *g)
+/* Applies "count" stored records on top of the catalogue defaults. */
+static bool unpack(const Record *records, int count, int32_t selected, F3DSGarage *g)
 {
-	if (f->selected < 0 || f->selected >= F3DS_CAR_COUNT)
+	if (selected < 0 || selected >= count)
 		return false;
 	garage_defaults(g);
-	g->selected = f->selected;
-	for (int i = 0; i < F3DS_CAR_COUNT; ++i) {
-		const Record *r = &f->car[i];
+	g->selected = selected;
+	for (int i = 0; i < count; ++i) {
+		const Record *r = &records[i];
 		F3DSVehicleDef *d = &g->def[i];
 		COPY_FIELDS(d, r);
 		d->tireType = (F3DSTireType)r->tireType;
@@ -81,19 +89,32 @@ static bool unpack(const File *f, F3DSGarage *g)
 
 static bool valid_payload(const void *p)
 {
+	const File *f = p;
 	F3DSGarage tmp;
-	return unpack(p, &tmp);
+	return unpack(f->car, F3DS_CAR_COUNT, f->selected, &tmp);
+}
+
+static bool valid_v1(const void *p)
+{
+	const FileV1 *f = p;
+	F3DSGarage tmp;
+	return unpack(f->car, GARAGE_V1_CARS, f->selected, &tmp);
 }
 
 bool garage_load(F3DSGarage *g, const char *path)
 {
-	File f;
-	return save_read(path, GARAGE_MAGIC, GARAGE_VERSION, &f, sizeof(f), valid_payload) && unpack(&f, g);
+	/* The records are too large for the 3DS main thread stack. */
+	static File f;
+	if (save_read(path, GARAGE_MAGIC, GARAGE_VERSION, &f, sizeof(f), valid_payload))
+		return unpack(f.car, F3DS_CAR_COUNT, f.selected, g);
+	FileV1 old;
+	return save_read(path, GARAGE_MAGIC, 1u, &old, sizeof(old), valid_v1) &&
+		unpack(old.car, GARAGE_V1_CARS, old.selected, g);
 }
 
 bool garage_save(const F3DSGarage *g, const char *path)
 {
-	File f;
+	static File f;
 	memset(&f, 0, sizeof(f));
 	f.selected = g->selected;
 	for (int i = 0; i < F3DS_CAR_COUNT; ++i) {

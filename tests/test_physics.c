@@ -92,9 +92,19 @@ static void acceleration(void)
 		printf("  car %d (%s): 0-100 km/h %.2f s\n", i, catalog_info(i)->name, t[i]);
 		CHECKF(t[i] > 2.5f && t[i] < 18.0f, "car %d: %f", i, t[i]);
 	}
+	/* No two cars are the same machine: each pair differs clearly in at least
+	 * two of acceleration, mass, peak power and driven axles. */
 	for (int i = 0; i < F3DS_CAR_COUNT; ++i)
-		for (int j = 0; j < i; ++j)
-			CHECKF(fabsf(t[i] - t[j]) > 0.15f, "cars %d and %d feel identical", i, j);
+		for (int j = 0; j < i; ++j) {
+			F3DSVehicleDef a, b;
+			catalog_def(i, &a);
+			catalog_def(j, &b);
+			const int differences = (fabsf(t[i] - t[j]) > 0.3f) +
+				(fabsf(a.mass - b.mass) > 80.0f) +
+				(fabsf(vehicle_peak_power_kw(&a) - vehicle_peak_power_kw(&b)) > 15.0f) +
+				(fabsf(a.frontTorqueShare - b.frontTorqueShare) > 0.2f);
+			CHECKF(differences >= 2, "cars %d and %d feel identical", i, j);
+		}
 
 	/* Longitudinal load transfer: weight moves rearwards, the nose lifts. */
 	Rig r = rig(0);
