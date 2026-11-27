@@ -17,6 +17,9 @@
 - [x] Direction progressive limitée selon l'adhérence, contre-braquage et amortissement du lacet ajoutés ; la formule cinématique du 25/11 est remplacée par un modèle de bicyclette dynamique à forces de pneus.
 - [ ] Essais sur New 3DS : suivre la liste « Console checklist » du README et rapporter perf.csv.
 
+## Graphismes de la démo (repris de main) — 27/11/2026
+La série de commits de `main` (jour/nuit puis retours arrière, textures) a été fusionnée dans l'historique et réimplémentée sur cette branche : les textures y avaient les octets inversés (le PICA200 attend A,B,G,R) et la gravité de la physique valait 24 m/s².
+
 ## Points à clarifier avec le porteur du projet
 - Pluie : « soleil uniquement » contre « adapter les sons à la pluie et aux surfaces mouillées ». Non implémenté.
 - Caméra : à l'arrêt l'angle choisi est conservé ; recentrage après relâchement en roulant et au redémarrage. Seules distance et hauteur sont sauvegardées (pas l'angle d'orbite). Le C-stick vertical ne fait rien.
