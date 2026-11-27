@@ -12,7 +12,7 @@ SAN="${SAN:--fsanitize=address,undefined -fno-sanitize-recover=undefined}"
 
 PORTABLE="source/core/core.c source/core/app.c source/input/input.c source/physics/physics.c
 source/physics/collision.c source/vehicle/vehicle.c source/vehicle/catalog.c source/world/track.c
-source/world/terrain.c source/world/world.c source/generation/noise.c
+source/world/terrain.c source/world/world.c source/world/props.c source/generation/noise.c
 source/generation/gen_relief.c source/generation/gen_water.c source/generation/gen_sites.c
 source/generation/gen_roads.c source/generation/gen_buildings.c source/generation/generate.c source/save/save_io.c source/save/settings.c source/save/garage.c
 source/ui/workshop.c source/ui/canvas.c source/ui/screens.c source/render/camera.c

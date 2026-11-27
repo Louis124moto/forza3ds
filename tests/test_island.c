@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "test.h"
-#include "world.h"
+#include "props.h"
 
 static int root(int *p, int i)
 {
@@ -124,6 +124,69 @@ static void check_island(const F3DSWorld *w)
 	CHECK(world_water_level(w, WORLD_HALF - 10.0f, 0.0f) == 0.0f);
 }
 
+/* Decor: reproducible, bounded, off the road, and driven by the details seed. */
+static void check_props(F3DSWorld *w)
+{
+	static F3DSSector a, b;
+	static F3DSScenery scenery;
+	int total = 0, most = 0, rails = 0, mostRails = 0, kinds[F3DS_PROP_COUNT] = { 0 }, blocked = 0;
+	for (int sz = 0; sz < WORLD_SECTORS; ++sz)
+		for (int sx = 0; sx < WORLD_SECTORS; ++sx) {
+			props_build(w, sx, sz, &a);
+			total += a.propCount;
+			rails += a.railCount;
+			if (a.propCount > most) most = a.propCount;
+			if (a.railCount > mostRails) mostRails = a.railCount;
+			for (int i = 0; i < a.propCount; ++i) {
+				const F3DSProp *p = &a.props[i];
+				kinds[p->kind]++;
+				F3DSCollider c;
+				F3DSRoadHit hit;
+				if (props_collider(p, &c) && world_road_nearest(w, p->x, p->z, 12.0f, &hit))
+					blocked += hit.distance < hit.half + (c.shape == F3DS_COLLIDER_BOX ? c.hx : c.hx) * 0.8f;
+			}
+		}
+	printf("  decor: %d props (max %d per sector), %d rails (max %d)\n", total, most, rails, mostRails);
+	CHECK(total > 20000);
+	CHECKF(most < PROPS_MAX, "%d", most);
+	CHECKF(mostRails < PROPS_RAIL_MAX, "%d", mostRails);
+	CHECK(rails > 200);
+	for (int k = 0; k < F3DS_PROP_COUNT; ++k)
+		CHECKF(kinds[k] > 0, "prop kind %d", k);
+	CHECKF(blocked == 0, "%d obstacles on a road", blocked);
+
+	/* A town sector: same seeds, same decor; other details, other decor and
+	 * the same structure. */
+	const int sx = (int)((w->sites[0].x + WORLD_HALF) / WORLD_SECTOR);
+	const int sz = (int)((w->sites[0].z + WORLD_HALF) / WORLD_SECTOR);
+	memset(&a, 0, sizeof(a));
+	memset(&b, 0, sizeof(b));
+	props_build(w, sx, sz, &a);
+	props_build(w, sx, sz, &b);
+	CHECK(a.propCount > 0 && memcmp(&a, &b, sizeof(a)) == 0);
+	const uint32_t sum = world_checksum(w);
+	w->detail++;
+	props_build(w, sx, sz, &b);
+	CHECK(memcmp(&a, &b, sizeof(a)) != 0);
+	CHECK(world_checksum(w) == sum);
+	w->detail--;
+
+	/* The cache serves the same sector without rebuilding it. */
+	scenery_reset(&scenery, w);
+	F3DSCollider out[64];
+	const int n = scenery_colliders(&scenery, w->sites[0].x, w->sites[0].z, 40.0f, out, 64);
+	CHECK(n > 0 && n <= 64);
+	const uint32_t builds = scenery.builds;
+	CHECK(scenery_colliders(&scenery, w->sites[0].x, w->sites[0].z, 40.0f, out, 64) == n);
+	CHECK(scenery.builds == builds);
+	for (int i = 0; i < 20; ++i)
+		scenery_sector(&scenery, i, 16);
+	CHECK(scenery.builds >= builds + 20);
+	CHECK(scenery_colliders(&scenery, 1e6f, 1e6f, 10.0f, out, 64) == 0);
+	/* The start is clear. */
+	CHECK(scenery_colliders(&scenery, w->spawnX, w->spawnZ, 2.5f, out, 64) >= 0);
+}
+
 void test_island(void)
 {
 	static F3DSWorld w, other;
@@ -138,6 +201,8 @@ void test_island(void)
 		const uint32_t sum = world_checksum(&w);
 		CHECK(sum != previous);
 		previous = sum;
+		if (i < 2)
+			check_props(&w);
 		if (i == 0) {
 			/* Same seed, same island; details do not touch the structure. */
 			CHECK(world_generate(&other, seeds[i], 99u, NULL, NULL));
