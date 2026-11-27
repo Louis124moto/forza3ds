@@ -307,9 +307,8 @@ static void draw_hud(F3DSCanvas *c, const F3DSApp *app)
 	/* Mini map. */
 	canvas_fill(c, 196, 8, 120, 128, C_HEADER);
 	draw_track_map(c, app, 256.0f, 72.0f, 0.23f, 1, false);
-	static const char *surfaces[F3DS_SURFACE_COUNT] = { "Asphalte", "Gravier", "Herbe" };
 	canvas_text(c, 200, 144, 1, car->surface == F3DS_SURFACE_ASPHALT ? C_GREEN : C_YELLOW,
-		surfaces[(unsigned)car->surface % F3DS_SURFACE_COUNT]);
+		surface_name(car->surface));
 	canvas_text(c, 200, 160, 1, C_DIM, catalog_info(app->garage.selected)->name);
 	canvas_text(c, 200, 196, 1, C_DIM, "SELECT carte");
 	canvas_text(c, 200, 208, 1, C_DIM, "START pause");

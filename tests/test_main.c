@@ -13,6 +13,7 @@ int main(void)
 	test_core_input_camera();
 	test_physics();
 	test_world();
+	test_island();
 	test_saves(dir);
 	test_workshop_audio();
 	test_app(dir);

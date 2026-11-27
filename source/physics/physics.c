@@ -366,7 +366,7 @@ static void substep(const F3DSVehicleDef *d, F3DSVehicleState *s, const F3DSInpu
 	const float bodyFx = fx[1] + fx[0] * cosS - fyF * sinS;
 	const float bodyFy = fyR + fyF * cosS + fx[0] * sinS;
 	float resist = d->drag * speed * u + d->rollResist * u *
-		(surface[1] == F3DS_SURFACE_ASPHALT ? 1.0f : surface[1] == F3DS_SURFACE_GRAVEL ? 2.5f : 4.5f);
+		surface_rolling(surface[1]);
 
 	/* Locked differentials resist yaw: stability off throttle. */
 	const float lockDamp = (d->diffRearLock * (1.0f - 0.75f * drivePedal) + 0.5f * d->diffFrontLock) *

@@ -23,6 +23,9 @@ typedef enum {
 	F3DS_SURFACE_ASPHALT = 0,
 	F3DS_SURFACE_GRAVEL,
 	F3DS_SURFACE_GRASS,
+	F3DS_SURFACE_DIRT,
+	F3DS_SURFACE_SAND,
+	F3DS_SURFACE_WATER,
 	F3DS_SURFACE_COUNT
 } F3DSSurface;
 
@@ -97,6 +100,8 @@ float vehicle_engine_torque(const F3DSVehicleDef *d, float rpm);
 float vehicle_peak_power_kw(const F3DSVehicleDef *d);
 
 float tire_surface_grip(F3DSTireType tire, F3DSSurface surface);
+float surface_rolling(F3DSSurface surface);
+const char *surface_name(F3DSSurface surface);
 float tire_peak_slip(F3DSTireType tire);
 const char *tire_name(F3DSTireType tire);
 

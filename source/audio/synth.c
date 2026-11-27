@@ -99,15 +99,17 @@ void synth_render(F3DSSynth *s, const F3DSSynthParams *p, int16_t *out, int coun
 	const float cutoff = p->cockpit ? 700.0f : 3200.0f + exhaust * 3500.0f + intake * 1200.0f;
 	const float aEngine = pole(cutoff, rate);
 	const float aWind = pole(p->cockpit ? 450.0f : 900.0f + p->speed * 12.0f, rate);
-	const float rollCut = p->surface == F3DS_SURFACE_GRAVEL ? 2600.0f :
-		p->surface == F3DS_SURFACE_GRASS ? 700.0f : 240.0f;
+	/* Tyre noise colour and level per surface. */
+	static const float rollCuts[F3DS_SURFACE_COUNT] = { 240.0f, 2600.0f, 700.0f, 1500.0f, 900.0f, 3800.0f };
+	static const float rollGains[F3DS_SURFACE_COUNT] = { 0.35f, 0.65f, 0.45f, 0.55f, 0.55f, 0.75f };
+	const int surface = (unsigned)p->surface < F3DS_SURFACE_COUNT ? (int)p->surface : 0;
+	const float rollCut = rollCuts[surface];
 	const float aRoll = pole(p->cockpit ? rollCut * 0.5f : rollCut, rate);
 	const float aOut = pole(p->cockpit ? 1600.0f : 9000.0f, rate);
 
 	const float speedN = clampf(p->speed / 60.0f, 0.0f, 1.3f);
 	const float windTarget = speedN * speedN * (p->cockpit ? 0.22f : 0.45f);
-	const float rollGain = p->surface == F3DS_SURFACE_ASPHALT ? 0.35f :
-		p->surface == F3DS_SURFACE_GRAVEL ? 0.65f : 0.45f;
+	const float rollGain = rollGains[surface];
 	const float rollTarget = p->grounded ? clampf(p->speed / 35.0f, 0.0f, 1.0f) * rollGain : 0.0f;
 	const float squealTarget = (p->grounded && p->speed > 3.0f) ?
 		clampf(p->slip, 0.0f, 1.0f) * (p->surface == F3DS_SURFACE_ASPHALT ? 0.30f : 0.06f) : 0.0f;
@@ -172,7 +174,8 @@ void synth_render(F3DSSynth *s, const F3DSSynthParams *p, int16_t *out, int coun
 		s->squeal += (squealTarget - s->squeal) * 0.003f;
 		s->lpWind += aWind * (noise(s) - s->lpWind);
 		float rollNoise = noise(s);
-		if (p->surface == F3DS_SURFACE_GRAVEL && (s->rng & 31u) == 0u)
+		if ((p->surface == F3DS_SURFACE_GRAVEL || p->surface == F3DS_SURFACE_DIRT) &&
+		    (s->rng & 31u) == 0u)
 			rollNoise *= 4.0f; /* stones */
 		s->lpRoll += aRoll * (rollNoise - s->lpRoll);
 		float amb = s->lpWind * s->wind + s->lpRoll * s->roll;

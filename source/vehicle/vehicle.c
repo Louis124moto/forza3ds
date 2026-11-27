@@ -62,17 +62,31 @@ float vehicle_peak_power_kw(const F3DSVehicleDef *d)
 float tire_surface_grip(F3DSTireType tire, F3DSSurface surface)
 {
 	static const float grip[F3DS_TIRE_COUNT][F3DS_SURFACE_COUNT] = {
-		/* asphalt, gravel, grass */
-		{ 1.00f, 0.55f, 0.45f }, /* road */
-		{ 1.12f, 0.50f, 0.40f }, /* sport */
-		{ 1.24f, 0.44f, 0.34f }, /* semi-slick */
-		{ 1.36f, 0.36f, 0.28f }, /* slick */
-		{ 0.94f, 0.80f, 0.62f }, /* rally */
-		{ 0.84f, 0.76f, 0.76f }, /* off-road */
+		/* asphalt, gravel, grass, dirt, sand, water */
+		{ 1.00f, 0.55f, 0.45f, 0.58f, 0.36f, 0.40f }, /* road */
+		{ 1.12f, 0.50f, 0.40f, 0.52f, 0.32f, 0.36f }, /* sport */
+		{ 1.24f, 0.44f, 0.34f, 0.46f, 0.27f, 0.30f }, /* semi-slick */
+		{ 1.36f, 0.36f, 0.28f, 0.38f, 0.22f, 0.22f }, /* slick */
+		{ 0.94f, 0.80f, 0.62f, 0.86f, 0.58f, 0.52f }, /* rally */
+		{ 0.84f, 0.76f, 0.76f, 0.82f, 0.72f, 0.58f }, /* off-road */
 	};
 	if ((unsigned)tire >= F3DS_TIRE_COUNT) tire = F3DS_TIRE_ROAD;
 	if ((unsigned)surface >= F3DS_SURFACE_COUNT) surface = F3DS_SURFACE_ASPHALT;
 	return grip[tire][surface];
+}
+
+float surface_rolling(F3DSSurface surface)
+{
+	static const float factor[F3DS_SURFACE_COUNT] = { 1.0f, 2.5f, 4.5f, 3.0f, 8.0f, 14.0f };
+	return factor[(unsigned)surface < F3DS_SURFACE_COUNT ? surface : 0];
+}
+
+const char *surface_name(F3DSSurface surface)
+{
+	static const char *names[F3DS_SURFACE_COUNT] = {
+		"Asphalte", "Gravier", "Herbe", "Terre", "Sable", "Eau"
+	};
+	return names[(unsigned)surface < F3DS_SURFACE_COUNT ? surface : 0];
 }
 
 /* Slip angle (rad) at which each tire reaches peak lateral force. */

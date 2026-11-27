@@ -19,6 +19,7 @@ extern int g_checks, g_failures;
 void test_core_input_camera(void);
 void test_physics(void);
 void test_world(void);
+void test_island(void);
 void test_saves(const char *dir);
 void test_workshop_audio(void);
 void test_app(const char *dir);
